@@ -18,8 +18,6 @@ class Device(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     device_name = models.CharField(max_length=30)
     device_type = models.CharField(max_length=30)
-    location = models.CharField(max_length=100)    
-
-    asdasd
+    location = models.CharField(max_length=100)  
 
     # Create your models here.

@@ -1,7 +1,4 @@
-import environ
-# Initialise environment variables
-env = environ.Env()
-environ.Env.read_env()
+
 """
 Django settings for employeeManagementSystem project.
 
@@ -42,6 +39,8 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'task',
+    'leave',
 ]
 
 MIDDLEWARE = [
