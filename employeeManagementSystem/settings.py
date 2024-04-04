@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'users',
     'task',
     'leave',
+    'project',
 ]
 
 MIDDLEWARE = [
