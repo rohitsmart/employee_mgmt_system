@@ -3,7 +3,7 @@ from users.models import User
 from project.models import Project
 class Module(models.Model):
     project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    employee = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     module_name = models.CharField(max_length=100)
     start_date = models.DateField()
     end_date = models.DateField()
