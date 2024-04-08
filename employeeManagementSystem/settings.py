@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
+from datetime import timedelta
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,13 +41,28 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'users',
+    'feedback',
     'leave',
     'project',
     'module',
     'task',
-    'feedback',
     'assign',
+    'rest_framework',
+    'knox',
 ]
+REST_FRAMEWORK = {
+   'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        
+    ),
+}
+
+
+KNOX = {
+    'TOKEN_TTL': timedelta(hours=1),  # Token lifespan
+    'TOKEN_LIMIT_PER_USER': 5,         # Limit the number of tokens per user
+    'AUTO_REFRESH': True,              # Automatically refresh access tokens
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

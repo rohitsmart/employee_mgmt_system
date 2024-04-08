@@ -8,5 +8,4 @@ class Leave(models.Model):
     reason=models.CharField(max_length=30)
     status=models.CharField(max_length=30)
 
-
 # Create your models here.

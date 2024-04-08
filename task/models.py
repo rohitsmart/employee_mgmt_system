@@ -11,5 +11,4 @@ class Task(models.Model):
     task_detail=models.TextField()
     status=models.CharField(max_length=30)
 
-
 # Create your models here.

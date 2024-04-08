@@ -1,20 +1,25 @@
 from django.shortcuts import render
-from django.shortcuts import render
 from django.http import JsonResponse
-from .models import Module
+from django.views.decorators.csrf import csrf_exempt
+from module.models import Module
+from project.models import Project
+from users.models import User
+import json
 
-
+@csrf_exempt
 def create_module(request):
     if request.method == 'POST':
         try:
-            module_name = request.POST.get('module_name')
-            project_id = request.POST.get('project_id')  
-            user_id = request.POST.get('user_id')  
-            start_date = request.POST.get('start_date')
-            end_date = request.POST.get('end_date')
-            description = request.POST.get('description')
-            assigned_hours = request.POST.get('assigned_hours')
-            actual_hours = request.POST.get('actual_hours')
+            data = json.loads(request.body)
+            module_name = data.get('module_name')
+            project_id = data.get('project_id')
+            user_id = data.get('user_id')  
+            start_date = data.get('start_date')
+            end_date =data.get('end_date')
+            description = data.get('description')
+            assigned_hours = data.get('assigned_hours')
+            actual_hours = data.get('actual_hours')
+            
 
             # creating the new model object here
             module = Module.objects.create(          
@@ -27,6 +32,7 @@ def create_module(request):
                 assigned_hours=assigned_hours,
                 actual_hours=actual_hours
             )
+            module.save()
             
             return JsonResponse({'message': 'Module created successfully'})
         except Exception as e:
@@ -34,20 +40,23 @@ def create_module(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'})
 
-
-def delete_module(request,id):
+@csrf_exempt
+def delete_module(request):
     if request.method == 'DELETE':
         try:
-         module = Module.objects.get(id=id)
-         module.delete()
-         return JsonResponse({'message': 'Module deleted successfully'})
+            module_id = request.GET.get('id')
+            if not id:
+                return JsonResponse({'message':'module id not found'})
+            module = Module.objects.get(id=module_id)
+            module.delete()
+            return JsonResponse({'message': 'Module deleted successfully'})
         except Module.DoesNotExist:
          return JsonResponse({'error': 'Module not found'})
     else:
        return JsonResponse({'error':'only DELETE method are allowed'}) 
 
 def update_module(request, id):
-    if request.method == 'POST':
+    if request.method == 'PUT':
         try:
             module = Module.objects.get(id=id)
             module.module_name = request.POST.get('module_name')
@@ -78,15 +87,5 @@ def get_module(request, id):
             return JsonResponse({'error': 'Module not found'})
     else:
         return JsonResponse({'error':'only GET method is allowed for fetching the profile'})
-    
-
-
-
-
-
-
-
-
-
 
 # Create your views here.
