@@ -1,15 +1,17 @@
-from django.utils import timezone
-from datetime import timedelta
+
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from users.models import User
-from knox.models import AuthToken
-# from django.contrib.auth import authenticate
-from rest_framework.authtoken.models import Token
+from rest_framework.response import Response
+# from rest_framework.authtoken.models import Token
 import json
 import bcrypt
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.decorators import api_view, permission_classes,authentication_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 @csrf_exempt
 def user_signup(request):
     if request.method == 'POST':
@@ -64,19 +66,64 @@ def user_login(request):
             access_token = str(refresh.access_token)
             refresh_token = str(refresh)
             
-            access_token_expiry = timezone.now() + timedelta(minutes=15)
-            refresh_token_expiry = timezone.now() + timedelta(days=1)
-            
             response = JsonResponse({
                 'success': 'User logged in successfully',
                 'access_token': access_token,
-                'expires_in':access_token_expiry
                 # 'refresh_token': refresh_token
             }, status=200)
             
-            response.set_cookie('refresh_token', refresh_token, expires=refresh_token_expiry)
+            response.set_cookie('refresh_token', refresh_token)
             return response
         else:
             return JsonResponse({'error': 'Authentication failed: username or password is wrong.'}, status=401)
     else:
         return JsonResponse({'error': 'Invalid request method.'}, status=405)
+
+
+# @api_view(['POST'])
+# @permission_classes([IsAuthenticated])
+# @authentication_classes([JWTAuthentication])
+# def user_logout(request):
+#     try:
+#         # Log out the user
+#         logout(request)
+
+#         # Delete refresh token
+#         refresh_token = request.COOKIES.get('refresh_token')
+#         if refresh_token:
+#             token = RefreshToken(refresh_token)
+#             token.blacklist()
+
+#         # Optionally, you can perform additional actions like updating user status
+        
+#         return Response({'success': 'Successfully logged out'}, status=200)
+#     except Exception as e:
+#         return Response({'error': 'An error occurred during logout'}, status=500)
+
+@csrf_exempt
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+@authentication_classes([JWTAuthentication])
+def user_logout(request):
+        """
+        Log out all user.
+        Args:
+            request (HttpRequest): The client's request to the server.
+        Returns:
+            HttpResponseRedirect: Redirects the user to the Login page.
+        """
+        if request.method == 'POST':
+            # Access the refresh token from request headers or cookies
+            try:
+                refresh_token = request.data["refresh"]
+                #refresh_token = request.META.get('HTTP_AUTHORIZATION', '').split()[1]
+                token = RefreshToken(refresh_token)
+                token.blacklist()
+                return Response({'message':'User logout successfully'},status=status.HTTP_205_RESET_CONTENT)
+            except Exception as err:
+                return Response({'message':str(err)},status=status.HTTP_400_BAD_REQUEST)
+        else:
+            return Response({'error': 'Invalid request method.'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    
+    
