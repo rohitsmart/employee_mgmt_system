@@ -17,6 +17,7 @@ class Migration(migrations.Migration):
             name='User',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('employeeID',models.IntegerField(unique=True,null=False)),
                 ('first_name', models.CharField(max_length=30, null=False)),
                 ('last_name', models.CharField(max_length=30,null=False)),
                 ('phone_number',models.IntegerField(unique=True,null=False)),
@@ -45,6 +46,13 @@ class Migration(migrations.Migration):
                 ('in_time', models.TimeField()),
                 ('out_time', models.TimeField()),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user')),
+            ],
+        ),
+         migrations.CreateModel(
+            name='EmployeeID',
+            fields=[
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('employeeID', models.IntegerField(unique=True)),
             ],
         ),
     ]

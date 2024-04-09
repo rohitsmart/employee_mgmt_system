@@ -2,6 +2,7 @@ from django.db import models
 
 
 class User(models.Model):
+    employeeID=models.IntegerField(unique=True,null=False)
     last_name = models.CharField(max_length=30,null=False)
     first_name = models.CharField(max_length=30, null=False)
     phone_number=models.IntegerField(unique=True,null=False)
@@ -22,4 +23,10 @@ class Device(models.Model):
     device_name = models.CharField(max_length=30)
     device_type = models.CharField(max_length=30)
     location = models.CharField(max_length=100)
+    
+class EmployeeID(models.Model):
+    employeeID=models.IntegerField(unique=True,null=False)
 # Create your models here.
+
+
+    
