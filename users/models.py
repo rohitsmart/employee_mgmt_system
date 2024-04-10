@@ -27,6 +27,3 @@ class Device(models.Model):
 class EmployeeID(models.Model):
     employeeID=models.IntegerField(unique=True,null=False)
 # Create your models here.
-
-
-    

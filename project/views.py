@@ -107,3 +107,4 @@ def get_module(request):
         return JsonResponse({'error':'only GET method is allowed for fetching the profile'})
 
 # Create your views here.
+

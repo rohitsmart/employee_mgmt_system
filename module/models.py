@@ -11,7 +11,3 @@ class Module(models.Model):
     description = models.TextField()
     assigned_hours = models.DecimalField(max_digits=5, decimal_places=2)
     actual_hours = models.DecimalField(max_digits=5, decimal_places=2)
-
-
-
-# Create your models here.

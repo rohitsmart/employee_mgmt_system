@@ -1,4 +1,3 @@
-
 from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -31,8 +30,8 @@ def user_signup(request):
             password = f"{first_name}@{employeeID}"
             # print('employee id --->',role)
             
-            # if not all([email, password, first_name, last_name, phone_number, address]):
-            #      return JsonResponse({'error': 'All required fields must be provided'}, status=400)
+            if not all([email, password, first_name, last_name, phone_number, address]):
+                 return JsonResponse({'error': 'All required fields must be provided'}, status=400)
              
                 
             hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
@@ -57,7 +56,6 @@ def user_signup(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
     
-
 User = get_user_model()
 @csrf_exempt
 def user_login(request):
@@ -66,27 +64,31 @@ def user_login(request):
             data = json.loads(request.body)
             email = data.get('email')
             password = data.get('password')
+            # print('email',password)
 
             if not all([email, password]):
                 return JsonResponse({'error': 'Email and password are required.'}, status=400)
 
             user = User.objects.filter(email=email).first()
-
+            print('1')
             if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
+                print('2')
                 refresh = RefreshToken.for_user(user)
                 access_token = str(refresh.access_token)
                 refresh_token = str(refresh)
-
+                print('2')
                 response = JsonResponse({
                     'success': 'User logged in successfully',
                     'access_token': access_token,
                     'refresh_token': refresh_token
                 }, status=200)
-
+                print('3')
                 # Set refresh token in cookie
                 response.set_cookie('refresh_token', refresh_token)
+                print('4')
                 return response
             else:
+                print('6')
                 return JsonResponse({'error': 'Authentication failed: username or password is wrong.'}, status=401)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
@@ -131,23 +133,6 @@ def user_logout(request):
                 return Response({'message':str(err)})
         else:
             return Response({'error': 'Invalid request method.'})
-        
-# last_employee_id = 1000  
-# @csrf_exempt
-# def generate_employee_id(request):
-#     global last_employee_id
-#     last_employee_id += 1
-#     return last_employee_id
-
-# def get_empID(request):
-#     global last_employee_id
-#     if request.method == "GET":
-#         employee_id = generate_employee_id(request)
-#         employeeID=EmployeeID.objects.create(
-#             employeeID=employee_id
-#         )
-#         employeeID.save()
-#         return JsonResponse({'employeeID': employee_id})
 
 @csrf_exempt
 def get_empID(request):
@@ -162,14 +147,3 @@ def get_empID(request):
         employeeID = EmployeeID.objects.create(employeeID=new_employee_id)
         employeeID.save()
         return JsonResponse({'employeeID': new_employee_id})
-
-# @csrf_exempt
-# def get_empID(request):
-#     if request.method == "GET":
-#         return generate_employee_id(request)
-        
-
-
-
-
-        

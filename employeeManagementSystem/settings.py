@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -40,16 +41,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'users',
-    'feedback',
-    'leave',
-    'project',
-    'module',
-    'task',
-    'assign',
     'rest_framework',
     'knox',
     "rest_framework_simplejwt.token_blacklist",
+    'users',
+    'project',
+    'module',
+    'task',
+    'leave',
+    'feedback',
+    'assign',
     
 ]
 REST_FRAMEWORK = {
