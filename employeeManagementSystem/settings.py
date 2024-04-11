@@ -41,9 +41,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'rest_framework',
-    'knox',
-    "rest_framework_simplejwt.token_blacklist",
     'users',
     'project',
     'module',
@@ -51,6 +48,9 @@ INSTALLED_APPS = [
     'leave',
     'feedback',
     'assign',
+    'corsheaders',
+    'rest_framework',
+    'rest_framework_simplejwt',
     
 ]
 REST_FRAMEWORK = {
@@ -135,10 +135,10 @@ WSGI_APPLICATION = 'employeeManagementSystem.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'employeeManagementSystemDB',
-        'USER': 'rohit', 
-        'PASSWORD': 'Rohit@3066', 
+        'ENGINE': 'mysql.connector.django',
+        'NAME': 'employeeManagementSystem',
+        'USER': 'perfectkode',
+        'PASSWORD': 'Perfect@123',
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -185,3 +185,4 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+APPEND_SLASH=False

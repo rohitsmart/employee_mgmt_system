@@ -1,149 +1,79 @@
-from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from users.models import User
-from rest_framework.response import Response
-# from rest_framework.authtoken.models import Token
+from django.contrib.auth.hashers import make_password
+from users.serializers import UserSerializer
+from .models import User, EmpID
+from django.db.models import Max
 import json
-import bcrypt
 from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.decorators import api_view, permission_classes,authentication_classes
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-import string
-from users.models import EmployeeID 
-from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password
+from django.utils.timezone import now
+from django.db import IntegrityError
+
 
 @csrf_exempt
-def user_signup(request):
+def signup(request):
     if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            employeeID=data.get('employeeID')
-            email = data.get('email')
-            first_name = data.get('first_name')
-            last_name = data.get('last_name')
-            phone_number = data.get('phone_number')
-            address=data.get('address')
-            role =data.get('role')
+        data = json.loads(request.body)
+        if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
+            email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
 
-            password = f"{first_name}@{employeeID}"
-            # print('employee id --->',role)
-            
-            if not all([email, password, first_name, last_name, phone_number, address]):
-                 return JsonResponse({'error': 'All required fields must be provided'}, status=400)
-             
-                
-            hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
-            # Create customer
-            print('1')
-            user = User.objects.create(
-                employeeID=employeeID,
-                email=email,
-                password=hashed_password.decode('utf-8'),
-                first_name=first_name,
-                last_name=last_name,
-                phone_number=phone_number,
-                address=address,
-                role=role,
-            )
-            print('user object',user)
-            user.save()
+            last_emp_id = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))['max_emp_id'] or 999 #1000
+            emp_id = last_emp_id + 1 #1001
+            password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
 
-            return JsonResponse({'message': 'User created successfully'})
-        except Exception as e:
-            return JsonResponse({'error from run time': str(e)}, status=500)
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
-    
-User = get_user_model()
-@csrf_exempt
-def user_login(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            email = data.get('email')
-            password = data.get('password')
-            # print('email',password)
-
-            if not all([email, password]):
-                return JsonResponse({'error': 'Email and password are required.'}, status=400)
-
-            user = User.objects.filter(email=email).first()
-            print('1')
-            if user and bcrypt.checkpw(password.encode('utf-8'), user.password.encode('utf-8')):
-                print('2')
-                refresh = RefreshToken.for_user(user)
-                access_token = str(refresh.access_token)
-                refresh_token = str(refresh)
-                print('2')
-                response = JsonResponse({
-                    'success': 'User logged in successfully',
-                    'access_token': access_token,
-                    'refresh_token': refresh_token
-                }, status=200)
-                print('3')
-                # Set refresh token in cookie
-                response.set_cookie('refresh_token', refresh_token)
-                print('4')
-                return response
-            else:
-                print('6')
-                return JsonResponse({'error': 'Authentication failed: username or password is wrong.'}, status=401)
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=500)
-    else:
-        return JsonResponse({'error': 'Invalid request method.'}, status=405)
-
-
-# @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def user_logout(request):
-#     try:
-#         # Log out the user
-#         logout(request)
-
-#         # Delete refresh token
-#         refresh_token = request.COOKIES.get('refresh_token')
-#         if refresh_token:
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()
-
-#         # Optionally, you can perform additional actions like updating user status
-        
-#         return Response({'success': 'Successfully logged out'}, status=200)
-#     except Exception as e:
-#         return Response({'error': 'An error occurred during logout'}, status=500)
-
-@csrf_exempt
-@api_view(['POST'])
-@permission_classes([IsAuthenticated])
-@authentication_classes([JWTAuthentication])
-def user_logout(request):
-        if request.method == 'POST':
-            # Access the refresh token from request headers or cookies
             try:
-                refresh_token = request.data["refresh"]
-                #refresh_token = request.META.get('HTTP_AUTHORIZATION', '').split()[1]
-                token = RefreshToken(refresh_token)
-                token.blacklist()
-                return Response({'message':'User logout successfully'})
-            except Exception as err:
-                return Response({'message':str(err)})
+                                
+                emp_id_record = EmpID.objects.create(emp_id=emp_id)
+
+                user = User.objects.create(
+                    emp_id=emp_id_record,
+                    firstName=data['firstName'],
+                    lastName=data['lastName'],
+                    email=email,
+                    role=data['role'],
+                    mobileNumber=data['mobileNumber'],
+                    password=make_password(password),
+                    active=False
+                )
+                response_data = {
+                    'message': 'User signed up successfully',
+                    'email': email,
+                    'password': password
+                }
+                return JsonResponse(response_data, status=201)
+            except IntegrityError as e:
+                return JsonResponse({'error': 'Email or mobile number already exists'}, status=400)
         else:
-            return Response({'error': 'Invalid request method.'})
+            return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+
 
 @csrf_exempt
-def get_empID(request):
-    if request.method == "GET":
-        last_employee_id_object = EmployeeID.objects.last()
-        if last_employee_id_object:
-            last_employee_id = last_employee_id_object.employeeID
+def login(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        email = data.get('email')
+        password = data.get('password')
+        if email and password:
+            user = User.objects.filter(email=email).first()
+            if user:
+                if check_password(password, user.password):
+                    refresh = RefreshToken.for_user(user)
+                    user_serializer = UserSerializer(user)
+                    return JsonResponse({
+                        'user': user_serializer.data,
+                        'access_token': str(refresh.access_token),
+                        'refresh_token': str(refresh)
+                    }, status=200)
+                else:
+                    return JsonResponse({'error': 'Invalid credentials'}, status=400)
+            else:
+                return JsonResponse({'error': 'Invalid credentials'}, status=400)
         else:
-            last_employee_id = 1000
-
-        new_employee_id = last_employee_id + 1
-        employeeID = EmployeeID.objects.create(employeeID=new_employee_id)
-        employeeID.save()
-        return JsonResponse({'employeeID': new_employee_id})
+            return JsonResponse({'error': 'Email and password are required'}, status=400)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)

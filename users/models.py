@@ -1,29 +1,22 @@
 from django.db import models
 
+class EmpID(models.Model):
+    id = models.AutoField(primary_key=True)
+    emp_id = models.IntegerField(unique=True)
+
+    def __str__(self):
+        return str(self.emp_id)
 
 class User(models.Model):
-    employeeID=models.IntegerField(unique=True,null=False)
-    last_name = models.CharField(max_length=30,null=False)
-    first_name = models.CharField(max_length=30, null=False)
-    phone_number=models.IntegerField(unique=True,null=False)
-    address=models.CharField(max_length=100,null=False)
-    role=models.CharField(max_length=30,default='employee')
-    email=models.EmailField(max_length=30,null=False,unique=True)
-    password=models.TextField(null=False) 
+    id = models.AutoField(primary_key=True)
+    emp_id = models.OneToOneField(EmpID, on_delete=models.CASCADE)
+    firstName = models.CharField(max_length=100, null=True)
+    lastName = models.CharField(max_length=100, null=True)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=100, null=True)
+    mobileNumber = models.CharField(unique=True, max_length=15)
+    password = models.CharField(max_length=255)
+    active = models.BooleanField(default=False)
 
-
-class Attendance(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    date=models.DateField()
-    in_time=models.TimeField()
-    out_time=models.TimeField()
-
-class Device(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    device_name = models.CharField(max_length=30)
-    device_type = models.CharField(max_length=30)
-    location = models.CharField(max_length=100)
-    
-class EmployeeID(models.Model):
-    employeeID=models.IntegerField(unique=True,null=False)
-# Create your models here.
+    def __str__(self):
+        return self.email

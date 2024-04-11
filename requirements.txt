@@ -1,0 +1,9 @@
+django
+mysql-connector-python
+django-cors-headers
+bcrypt
+djangorestframework 
+djangorestframework-simplejwt 
+pyjwt
+requests
+django-cors-headers
