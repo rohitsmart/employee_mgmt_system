@@ -1,5 +1,7 @@
 from django.db import models
 
+
+
 class EmpID(models.Model):
     id = models.AutoField(primary_key=True)
     emp_id = models.IntegerField(unique=True)

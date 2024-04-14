@@ -51,6 +51,9 @@ INSTALLED_APPS = [
     'corsheaders',
     'rest_framework',
     'rest_framework_simplejwt',
+    'device',
+    'attendance',
+    
     
 ]
 REST_FRAMEWORK = {
@@ -135,10 +138,10 @@ WSGI_APPLICATION = 'employeeManagementSystem.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'mysql.connector.django',
-        'NAME': 'employeeManagementSystem',
-        'USER': 'perfectkode',
-        'PASSWORD': 'Perfect@123',
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'employeeManagementSystemDB',
+        'USER': 'rohit', 
+        'PASSWORD': 'Rohit@3066', 
         'HOST': 'localhost',
         'PORT': '3306',
     }
@@ -186,3 +189,7 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 APPEND_SLASH=False
+
+# AUTH_USER_MODEL= 'users.User'
+
+

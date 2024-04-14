@@ -1,29 +1,35 @@
-from django.shortcuts import render
+from rest_framework.decorators import api_view, permission_classes,authentication_classes
+# from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from module.models import Module
+from project.models import Project
 from users.models import User
 import json
 # from rest_framework.authentication import TokenAuthentication
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+# from rest_framework.permissions import IsAuthenticated
+# from rest_framework_simplejwt.authentication import JWTAuthentication
+# from django.utils import timezone
+# from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_http_methods
+from .decorators import jwt_auth_required
 
 
 @csrf_exempt
-@api_view(['POST'])
-@authentication_classes([JWTAuthentication])
-@permission_classes([IsAuthenticated])
+@require_POST
+@jwt_auth_required
 def create_module(request):
     if request.method == 'POST':
-        try:
-            user = request.user
+        try:           
+            user = request.user_id
             if not user:
-                return JsonResponse({'message': 'User is unauthenticated'})
+                return JsonResponse({'message': 'User not found'})
+            project_id = request.GET.get('id')           #here we are creating the module with the project_id
+            if not project_id:
+                return JsonResponse({'message': 'Project ID not provided'})
             data = json.loads(request.body)
-            module_name = data.get('module_name')
-            project_id = data.get('project_id')
-            user_id = data.get('user_id')  
+            module_name = data.get('module_name') 
             start_date = data.get('start_date')
             end_date = data.get('end_date')
             description = data.get('description')
@@ -34,7 +40,7 @@ def create_module(request):
             module = Module.objects.create(          
                 module_name=module_name,
                 project_id=project_id,
-                user_id=user_id,
+                user_id=user,
                 start_date=start_date,
                 end_date=end_date,
                 description=description,
@@ -51,9 +57,14 @@ def create_module(request):
 
 
 @csrf_exempt
+@require_http_methods(["DELETE"])
+@jwt_auth_required
 def delete_module(request):
     if request.method == 'DELETE':
         try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User not found'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -66,9 +77,14 @@ def delete_module(request):
        return JsonResponse({'error':'only DELETE method are allowed'}) 
    
 @csrf_exempt
+@require_http_methods(["PUT"])
+@jwt_auth_required
 def update_module(request):
     if request.method == 'PUT':
         try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User not found'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -87,9 +103,14 @@ def update_module(request):
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed for updating module'})
 
+@require_GET
+@jwt_auth_required
 def get_module(request):
     if request.method == 'GET':
         try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User not found'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -104,7 +125,121 @@ def get_module(request):
         except Module.DoesNotExist:
             return JsonResponse({'error': 'Module not found'})
     else:
-        return JsonResponse({'error':'only GET method is allowed for fetching the profile'})
+        return JsonResponse({'error':'only GET method is allowed for fetching the module'})
+    
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def create_project(request):
+    print('0')
+    try:
+        user = request.user_id
+        if not user:
+            return JsonResponse({'error': 'User not found'})
+        print('3')
+        if request.method == 'POST':
+            data = json.loads(request.body)
+            project_name = data.get('project_name')
+            description = data.get('description')
+            number_of_module = data.get('number_of_module')  
+            start_date = data.get('start_date')
+            end_date = data.get('end_date')
+            status = data.get('status')
+            print('4')
 
+            # Creating the new model object here
+            project = Project.objects.create(          
+                project_name=project_name,
+                user_id=user,
+                start_date=start_date,
+                end_date=end_date,
+                description=description,
+                number_of_module=number_of_module,
+                status=status,
+            )
+            project.save()
+            print('5')
+            
+            return JsonResponse({'message': 'Project created successfully'})
+    except Exception as e:
+        print('7')
+        return JsonResponse({'error': str(e)})
+    print('8')
+    return JsonResponse({'error': 'Only POST requests are allowed'})
+
+
+@require_GET
+@jwt_auth_required
+def get_project(request):
+    if request.method == 'GET':
+        try:
+            user = request.user_id
+            if not user:
+             return JsonResponse({'error': 'User not found'})
+            project_id = request.GET.get('id')
+            if not id:
+                return JsonResponse({'message':'project id not found'})
+            project = Project.objects.get(id=project_id)
+            return JsonResponse({'project_name': project.project_name, 
+                             'start_date':project.start_date,
+                             'end_date':project.end_date,
+                             'description':project.description,
+                             'number_of_module':project.number_of_module,
+                             'status':project.status
+                             })
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'project not found'})
+    else:
+        return JsonResponse({'error':'only GET method is allowed for fetching the project'})
+ 
+@require_http_methods(["PUT"])
+@jwt_auth_required  
+@csrf_exempt
+def update_project(request):
+    if request.method == 'PUT':
+        try:
+            user = request.user_id
+            if not user:
+             return JsonResponse({'error': 'User not found'})
+            project_id = request.GET.get('id')
+            if not project_id:
+                return JsonResponse({'message':'project id not found'})
+            data = json.loads(request.body)
+            project = Project.objects.get(id=project_id)
+            project.project_name = data.get('project_name')
+            project.description = data.get('description')
+            project.number_of_module = data.get('number_of_module')
+            project.start_date = data.get('start_date')
+            project.end_date = data.get('end_date')
+            project.status = data.get('status')
+            project.save()
+            return JsonResponse({'message': 'project updated successfully'})
+        except Project.DoesNotExist:
+            return JsonResponse({'error': 'project not found'})
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed for updating the project'})    
+    
+
+@require_http_methods(["DELETE"])
+@jwt_auth_required    
+@csrf_exempt  
+def delete_project(request):
+    if request.method=='DELETE':
+        try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'error': 'User not found'})
+            project_id=request.GET.get('id')  
+            if not project_id:
+                return JsonResponse({'message':'project not found'})
+            project=Project.objects.get(id=project_id)
+            project.delete()
+            return JsonResponse({'message':'project deleted successfully'})
+        except Project.DoesNotExist:
+            return JsonResponse({'error':'project not found'})
+    else:
+        return JsonResponse({'error':'only DELETE method are allowed to delete the project'})
 # Create your views here.
+
+
 
