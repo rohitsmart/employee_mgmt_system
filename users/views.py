@@ -11,7 +11,6 @@ from django.contrib.auth.hashers import check_password
 from django.utils.timezone import now
 from django.db import IntegrityError
 from users.models import EmpID 
-
 from django.contrib.auth import authenticate
 import jwt
 from datetime import datetime, timedelta
@@ -57,17 +56,6 @@ def signup(request):
             return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
-
-
-
-# from django.http import JsonResponse
-# from django.contrib.auth.models import User
-# from django.contrib.auth.hashers import check_password
-# from rest_framework_simplejwt.tokens import RefreshToken
-# from .serializers import UserSerializer
-# import json
-
 
 
 @csrf_exempt

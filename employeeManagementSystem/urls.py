@@ -18,7 +18,9 @@ from project.views import create_module,delete_module, update_module, get_module
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
 from feedback.views import create_feedback, update_feedback
-from assign.views import assign_task
+from assign.views import assign_task,unassign_task,update_assignTask
+from device.views import add_device, remove_device, get_device,update_device
+from attendance.views import mark_attendance, get_attendance
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -41,6 +43,15 @@ urlpatterns = [
     path('api/feedback/createFeedback',create_feedback, name='create_task'),
     path('api/feedback/updateFeedback',update_feedback, name='update_feedback'),
     path('api/assign/assignTask',assign_task, name='assign_task'),
+    path('api/assign/unassignTask',unassign_task, name='unassign_task'),
+    path('api/device/addDevice',add_device, name='add_device'),
+    path('api/device/removeDevice',remove_device, name='remove_device'),
+    path('api/device/getDevice',get_device, name='get_device'),
+    path('api/device/updateDevice',update_device, name='update_device'),      #to test
+    path('api/attendance/markAttendance',mark_attendance, name='mark_attendance'),     #to test
+    path('api/attendance/getAttendance',get_attendance, name='get_attendance'), #to test
+    path('api/assign/updateAssignedTask',update_assignTask, name='update_assignTask')
+    
 ]
 
 

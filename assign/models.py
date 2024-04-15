@@ -5,13 +5,11 @@ from module.models import Module
 from task.models import Task
 
 class Assign(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    project = models.ForeignKey(Project, on_delete=models.CASCADE)
-    module = models.ForeignKey(Module, on_delete=models.CASCADE)
+    # user = models.ForeignKey(User, on_delete=models.CASCADE)      #here user is the user which is assigning the task
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
-    assign_date=models.DateField()
     assigned_by=models.CharField(max_length=30)
     assigned_to=models.CharField(max_length=30)
+    assign_date=models.DateField()
     deadline=models.DateField()
     status=models.CharField(max_length=30)
     comment=models.TextField()

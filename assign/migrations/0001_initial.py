@@ -26,10 +26,8 @@ class Migration(migrations.Migration):
                 ('deadline', models.DateField()),
                 ('status', models.CharField(max_length=30)),
                 ('comment', models.TextField()),
-                ('module', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='module.module')),
-                ('project', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='project.project')),
                 ('task', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='task.task')),
-                ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user')),
+                # ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user')),
             ],
         ),
     ]
