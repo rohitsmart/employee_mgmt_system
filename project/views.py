@@ -131,12 +131,11 @@ def get_module(request):
 @require_POST
 @jwt_auth_required
 def create_project(request):
-    print('0')
     try:
         user = request.user_id
         if not user:
             return JsonResponse({'error': 'User not found'})
-        print('3')
+
         if request.method == 'POST':
             data = json.loads(request.body)
             project_name = data.get('project_name')
@@ -145,8 +144,7 @@ def create_project(request):
             start_date = data.get('start_date')
             end_date = data.get('end_date')
             status = data.get('status')
-            print('4')
-
+            
             # Creating the new model object here
             project = Project.objects.create(          
                 project_name=project_name,
@@ -158,13 +156,9 @@ def create_project(request):
                 status=status,
             )
             project.save()
-            print('5')
-            
             return JsonResponse({'message': 'Project created successfully'})
     except Exception as e:
-        print('7')
         return JsonResponse({'error': str(e)})
-    print('8')
     return JsonResponse({'error': 'Only POST requests are allowed'})
 
 

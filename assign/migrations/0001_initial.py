@@ -20,8 +20,9 @@ class Migration(migrations.Migration):
             name='Assign',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('assign_date', models.DateField()),
+                ('assigned_to',models.CharField(max_length=30)),
                 ('assigned_by', models.CharField(max_length=30)),
+                ('assign_date', models.DateField()),
                 ('deadline', models.DateField()),
                 ('status', models.CharField(max_length=30)),
                 ('comment', models.TextField()),

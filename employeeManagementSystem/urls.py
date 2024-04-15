@@ -18,6 +18,7 @@ from project.views import create_module,delete_module, update_module, get_module
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
 from feedback.views import create_feedback, update_feedback
+from assign.views import assign_task
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -38,7 +39,8 @@ urlpatterns = [
     path('api/task/getTask', get_task, name='get_task'),
     path('api/task/deleteTask', delete_task, name='delete_task'),
     path('api/feedback/createFeedback',create_feedback, name='create_task'),
-    path('api/feedback/updateFeedback',update_feedback, name='update_feedback')
+    path('api/feedback/updateFeedback',update_feedback, name='update_feedback'),
+    path('api/assign/assignTask',assign_task, name='assign_task'),
 ]
 
 

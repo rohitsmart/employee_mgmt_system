@@ -11,6 +11,7 @@ class Assign(models.Model):
     task = models.ForeignKey(Task, on_delete=models.CASCADE)
     assign_date=models.DateField()
     assigned_by=models.CharField(max_length=30)
+    assigned_to=models.CharField(max_length=30)
     deadline=models.DateField()
     status=models.CharField(max_length=30)
     comment=models.TextField()
