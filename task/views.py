@@ -20,7 +20,7 @@ def create_task(request):
             module_id = request.GET.get('id')           #here we are creating the module with the project_id
             if not module_id:
                 return JsonResponse({'message': 'Module ID not provided'})
-            logged_in_user = user  # Assuming you already have the logged-in user object
+            logged_in_user = user  
             project = Project.objects.get(user=logged_in_user).id
             data = json.loads(request.body)
             task_name= data.get('task_name')

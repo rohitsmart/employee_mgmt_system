@@ -18,9 +18,10 @@ from project.views import create_module,delete_module, update_module, get_module
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
 from feedback.views import create_feedback, update_feedback
-from assign.views import assign_task,unassign_task,update_assignTask
+from assign.views import assign_task,unassign_task,update_assignTask,get_assignedTask
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
+from leave.views import apply_leave, update_leave, get_leave, delete_leave
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -47,11 +48,15 @@ urlpatterns = [
     path('api/device/addDevice',add_device, name='add_device'),
     path('api/device/removeDevice',remove_device, name='remove_device'),
     path('api/device/getDevice',get_device, name='get_device'),
-    path('api/device/updateDevice',update_device, name='update_device'),      #to test
-    path('api/attendance/markAttendance',mark_attendance, name='mark_attendance'),     #to test
-    path('api/attendance/getAttendance',get_attendance, name='get_attendance'), #to test
-    path('api/assign/updateAssignedTask',update_assignTask, name='update_assignTask')
-    
+    path('api/device/updateDevice',update_device, name='update_device'),
+    path('api/attendance/markAttendance',mark_attendance, name='mark_attendance'),
+    path('api/attendance/getAttendanceRecordByID',get_attendance, name='get_attendance'), 
+    path('api/assign/updateAssignedTask',update_assignTask, name='update_assignTask'),
+    path('api/assign/getAssignedTask',get_assignedTask, name='get_assigned'),
+    path('api/leave/applyLeave',apply_leave, name='apply_leave'),  
+    path('api/leave/update_leave',update_leave, name='update_leave'),
+    path('api/leave/get_leaveByUserID',get_leave, name='get_leave'), 
+    path('api/leave/delete_leave',delete_leave, name='delete_leave'),       
 ]
 
 

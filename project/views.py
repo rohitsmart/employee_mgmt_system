@@ -145,7 +145,6 @@ def create_project(request):
             end_date = data.get('end_date')
             status = data.get('status')
             
-            # Creating the new model object here
             project = Project.objects.create(          
                 project_name=project_name,
                 user_id=user,
