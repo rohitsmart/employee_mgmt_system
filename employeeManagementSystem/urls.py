@@ -22,6 +22,7 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
+from recruit.views import create_stream, update_stream, get_questions, answer_question
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -56,7 +57,11 @@ urlpatterns = [
     path('api/leave/applyLeave',apply_leave, name='apply_leave'),  
     path('api/leave/update_leave',update_leave, name='update_leave'),
     path('api/leave/get_leaveByUserID',get_leave, name='get_leave'), 
-    path('api/leave/delete_leave',delete_leave, name='delete_leave'),       
+    path('api/leave/delete_leave',delete_leave, name='delete_leave'), 
+    path('api/recruit/create_stream',create_stream,name='create_stream'), 
+    path('api/recruit/update_stream',update_stream,name='update_stream'),  
+    path('api/recruit/getQuestions',get_questions,name='get_questions'),    
+    path('api/recruit/answerQuestion',answer_question,name='answer_question'),
 ]
 
 

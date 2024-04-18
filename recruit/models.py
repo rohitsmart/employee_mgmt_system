@@ -21,24 +21,21 @@ class Stream(models.Model):
     
 class Questions(models.Model):
     id=models.AutoField(primary_key=True)
-    question=models.CharField(max_length=500,unique=True)
-    option1=models.TextField()
-    option2=models.TextField()
-    option3=models.TextField()
-    option4=models.TextField()
-    correctAnswer=models.CharField(max_length=50)
+    question_id=models.IntegerField(null=True)
+    correctAnswer=models.CharField(max_length=50, null=True)
+    candidate_answer=models.CharField(max_length=100, null=True)
     TYPE_CHOICES = (
         ('mcq', 'Multiple Choice Question'),
         ('subjective', 'Subjective Question'),
     )
-    type = models.CharField(max_length=50, choices=TYPE_CHOICES)
+    type = models.CharField(max_length=50, choices=TYPE_CHOICES, null=True)
     LEVEL_CHOICES = (
         (1, 'Level 1'),
         (2, 'Level 2'),
         (3, 'Level 3'),
     )
-    level = models.IntegerField(choices=LEVEL_CHOICES)
-    stream =models.ForeignKey(Stream, on_delete=models.CASCADE)
+    level = models.IntegerField(choices=LEVEL_CHOICES,null=True)
+    stream =models.ForeignKey(Stream, on_delete=models.CASCADE, null=True)
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
