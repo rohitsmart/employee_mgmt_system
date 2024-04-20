@@ -23,8 +23,8 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(primary_key=True, serialize=False)),
                 ('question_id',models.IntegerField(null=True)),
-                ('correctAnswer', models.CharField(max_length=50,null=True)),
-                ('candidate_answer',models.CharField(max_length=100, null=True)),
+                ('correctResponse', models.CharField(max_length=50,null=True)),
+                # ('candidate_answer',models.CharField(max_length=100, null=True)),
                 ('type', models.CharField(choices=[('mcq', 'Multiple Choice Question'), ('subjective', 'Subjective Question')], max_length=50,null=True)),
                 ('level', models.IntegerField(choices=[(1, 'Level 1'), (2, 'Level 2'), (3, 'Level 3')],null=True)),
                 ('stream', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.stream',null=True)),

@@ -8,6 +8,10 @@ from django.views.decorators.csrf import csrf_exempt
 import json
 from recruit.models import Stream
 import random
+from recruit.models import Questions
+from recruit.models import Exam
+from recruit.models import Result
+
 
 @csrf_exempt
 @require_POST
@@ -93,25 +97,112 @@ def answer_question(request):
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
-              json_question = json.load(file)
-              data=json.loads(request.body)
-              question_id = data.get('id')
-              your_answer = data.get('your_answer')
-              
-              question = next((question for question in json_question if question.get('id') == question_id))
-              if question:
-                  correct_answer=question.get('correctAnswer')
-                  if your_answer == correct_answer:
-                      return JsonResponse({'message': 'correct answer'})
-                  else:
-                      return JsonResponse({'message': 'incorrect answer'})
-              else:
-                  return JsonResponse({'message': 'question not found'})   
+                json_question = json.load(file)
+                data = json.loads(request.body)
+                candidate_id = data.get('candidate_id')
+                question_id = data.get('id')
+                candidateResponse = data.get('candidateResponse') 
+                Date = data.get('Date')
+                                           
+                question = next((question for question in json_question if question.get('id') == question_id))
+                if question:
+                    correctAnswer = question.get('correctAnswer')
+                    question = Questions.objects.create(
+                        question_id=question_id,
+                        correctResponse=correctAnswer,
+                    )
+                    question.save()
+                    exam = Exam.objects.create(
+                        candidate_id=candidate_id,
+                        question_id=question_id,
+                        candidateResponse=candidateResponse,
+                        correctResponse=correctAnswer,
+                        Date=Date,                      
+                    )
+                    exam.save()
+                    # if candidateResponse == correctAnswer:
+                    #     exam.status = "correct"
+                    #     exam.save()
+                    #     return JsonResponse({'message': 'correct answer'})
+                    # else:
+                    #     exam.status = "incorrect"
+                    #     exam.save()
+                    #     return JsonResponse({'message': 'incorrect answer'})
+                    return JsonResponse({'message': 'answer submitted successfully'})
+                else:
+                    return JsonResponse({'message': 'question not found'})  
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
 
+@require_POST
+@csrf_exempt
+def add_result(request):               #candidate will get only 5 questions according to that result will bw calculated
+    if request.method=='POST':
+        try:
+            data = json.loads(request.body)
+            candidate_id=data.get('candidate_id')
+            date=data.get('date')
+            maximum=data.get('maximum')
+            needed=data.get('needed')
+            
+            calculate_marks=Exam.objects.filter(candidate_id=candidate_id, status='correct')
+            total_marks=len(calculate_marks)*2
+            
+            result=Result.objects.create(
+                candidate_id=candidate_id,
+                date=date,
+                maximum=maximum,
+                needed=needed,
+                obtained=total_marks,
+            )
+            result.save()
+            # results=Exam.objects.filter(candidate_id=candidate_id)
+            # result_declared=[]
+            # for result_item in results:
+            #     result_declared.append({
+            #         'question_id':result_item.question_id,
+            #        'candidateResponse':result_item.candidateResponse,
+            #         'correctResponse':result_item.correctResponse,
+            #        'status':result_item.status
+            #     }) 
+                # return JsonResponse({'result':result_declared})
+            if total_marks>=needed:
+                result.status="pass"
+                result.save()
+                return JsonResponse({'result': result_declared, 'message': 'Candidate cleared the exam'})
+            else:
+                result.status="fail"
+                result.save()
+                return JsonResponse({'message': 'candidate failed the exam'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'}) 
+    
+require_GET
+def fetch_result(request):
+    if request.method=='GET':
+        try:
+            candidate_id=request.GET.get('candidate_id')
+            results=Exam.objects.filter(candidate_id=candidate_id)
+            result_declared=[]
+            for result_item in results:
+                result_declared.append({
+                    'question_id':result_item.question_id,
+                   'candidateResponse':result_item.candidateResponse,
+                    'correctResponse':result_item.correctResponse,
+                   'status':result_item.status
+                }) 
+                # return JsonResponse({'result':result_declared})
+            return JsonResponse({'result': result_declared})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})       
+            
+            
     
     
 

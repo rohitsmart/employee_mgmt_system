@@ -1,6 +1,5 @@
 from django.db import models
 from users.models import User
-# from recruit.models import Questions
 
 class ApplyJob(models.Model):
     id=models.AutoField(primary_key=True)
@@ -22,8 +21,7 @@ class Stream(models.Model):
 class Questions(models.Model):
     id=models.AutoField(primary_key=True)
     question_id=models.IntegerField(null=True)
-    correctAnswer=models.CharField(max_length=50, null=True)
-    candidate_answer=models.CharField(max_length=100, null=True)
+    correctResponse=models.CharField(max_length=50, null=True)
     TYPE_CHOICES = (
         ('mcq', 'Multiple Choice Question'),
         ('subjective', 'Subjective Question'),
@@ -69,7 +67,7 @@ class Result(models.Model):
     id=models.AutoField(primary_key=True)
     candidate=models.ForeignKey(User, on_delete=models.CASCADE)
     status=models.CharField(max_length=70)
-    date=models.DateField()
+    date=models.DateField()            
     maximum=models.IntegerField(null=False)
     obtained=models.IntegerField(null=False)
     needed=models.IntegerField(null=False)
@@ -78,21 +76,22 @@ class Result(models.Model):
         (2, 'Round 2'),
     )
     round = models.CharField(max_length=50,choices=ROUNDS)
-    scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
+    # scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
         
 class Exam(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
-    question = models.ForeignKey(Questions, on_delete=models.CASCADE)
+    # question = models.ForeignKey(Questions, on_delete=models.CASCADE)
+    question_id=models.IntegerField(null=True)
     candidateResponse = models.CharField(max_length=255)
     correctResponse = models.CharField(max_length=255)
-    Date = models.DateField()
+    Date = models.DateField()          #need to modigy this Date to date
     ROUNDS = (
         (1, 'Round 1'),
         (2, 'Round 2'),
     )
-    round = models.IntegerField(choices=ROUNDS)
+    round = models.IntegerField(choices=ROUNDS, null=True)
     status = models.CharField(max_length=50, null=True)
-    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)    
+    # scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
 
 class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
@@ -154,7 +153,9 @@ class Certification(models.Model):
     dateIssued = models.DateField()
 
     def __str__(self):
-        return f"Certification for {self.candidate}"       
+        return f"Certification for {self.candidate}"    
+    
+           
 
              
         
