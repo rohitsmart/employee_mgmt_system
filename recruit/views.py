@@ -238,6 +238,8 @@ def create_job(request):
         return JsonResponse({'error': 'Only POST requests are allowed'})
 
 
+@csrf_exempt
+@require_POST
 def fetch_job(request):
     query = request.GET.get('job')  
     
