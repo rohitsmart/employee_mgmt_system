@@ -10,7 +10,7 @@ from recruit.models import Stream
 import random
 from recruit.models import Questions
 from recruit.models import Exam
-from recruit.models import Result
+from recruit.models import Result,Job
 
 
 @csrf_exempt
@@ -207,3 +207,97 @@ def fetch_result(request):
     
 
 # Create your views here.
+@csrf_exempt
+@require_POST
+def create_job(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            status = data.get('status')
+            creater_id = data.get('creater_id') 
+            job_name = data.get('jobName')
+            job_description = data.get('jobDescription')
+            job_skills = data.get('jobSkills')
+            experience = data.get('experience')
+            expire = data.get('expire')
+                    
+            job = Job.objects.create(   
+                status=status,       
+                jobName=job_name,
+                jobDescription=job_description,
+                jobSkills=job_skills,
+                experience=experience,
+                expire=expire,
+                creater_id=creater_id  
+            )
+            job.save()
+            return JsonResponse({'message': 'Job created successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+
+
+def fetch_job(request):
+    query = request.GET.get('job')  
+    
+    if query == 'all':
+        jobs = Job.objects.all()
+    elif query in ['Active', 'Expired', 'Hide', 'InActive']:
+        jobs = Job.objects.filter(status=query)
+    else:
+        return JsonResponse({'error': 'Invalid query parameter'})
+    
+    data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
+             'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
+             'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
+    
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def edit_job(request, jobId):
+    if request.method == 'PUT':
+        try:
+            data = json.loads(request.body)
+            status = data.get('status')
+            job_name = data.get('jobName')
+            job_description = data.get('jobDescription')
+            job_skills = data.get('jobSkills')
+            experience = data.get('experience')
+            expire = data.get('expire')
+                    
+            job = Job.objects.get(pk=jobId)
+            
+            job.status = status
+            job.jobName = job_name
+            job.jobDescription = job_description
+            job.jobSkills = job_skills
+            job.experience = experience
+            job.expire = expire
+            job.save()
+            
+            return JsonResponse({'message': 'Job updated successfully'})
+        except Job.DoesNotExist:
+            return JsonResponse({'error': 'Job not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+
+@csrf_exempt
+@require_http_methods(["DELETE"])
+def delete_job(request):
+    job_id = request.GET.get('id')
+
+    if not job_id:
+        return JsonResponse({'error': 'Job ID is required'}, status=400)
+
+    try:
+        job = Job.objects.get(pk=job_id)
+        job.delete()
+        return JsonResponse({'message': 'Job deleted successfully'})
+    except Job.DoesNotExist:
+        return JsonResponse({'error': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
