@@ -76,7 +76,7 @@ class Result(models.Model):
         (2, 'Round 2'),
     )
     round = models.CharField(max_length=50,choices=ROUNDS)
-    scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
+    # scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
         
 class Exam(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -91,7 +91,7 @@ class Exam(models.Model):
     )
     round = models.IntegerField(choices=ROUNDS, null=True)
     status = models.CharField(max_length=50, null=True)
-    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
+    # scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
 
 class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
