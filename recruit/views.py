@@ -1,3 +1,4 @@
+from datetime import date, datetime
 import os
 from django.conf import settings
 from django.shortcuts import render
@@ -10,7 +11,8 @@ from recruit.models import Stream
 import random
 from recruit.models import Questions
 from recruit.models import Exam
-from recruit.models import Result,Job
+from recruit.models import Result,Job,ApplyJob,Notification
+from users.models import User
 
 
 @csrf_exempt
@@ -204,39 +206,30 @@ def fetch_result(request):
             
             
     
-    
 
-# Create your views here.
 @csrf_exempt
 @require_POST
 def create_job(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            status = data.get('status')
-            creater_id = data.get('creater_id') 
-            job_name = data.get('jobName')
-            job_description = data.get('jobDescription')
-            job_skills = data.get('jobSkills')
-            experience = data.get('experience')
-            expire = data.get('expire')
-                    
-            job = Job.objects.create(   
-                status=status,       
-                jobName=job_name,
-                jobDescription=job_description,
-                jobSkills=job_skills,
-                experience=experience,
-                expire=expire,
-                creater_id=creater_id  
+    try:
+        data = json.loads(request.body)
+        emp_id = data.get('emp_id') 
+        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()
+        
+        if is_emp_exists:
+            Job.objects.create(   
+                status=data.get('status'),       
+                jobName=data.get('jobName'),
+                jobDescription=data.get('jobDescription'),
+                jobSkills=data.get('jobSkills'),
+                experience=data.get('experience'),
+                expire=data.get('expire'),
+                creater_id=emp_id  
             )
-            job.save()
             return JsonResponse({'message': 'Job created successfully'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed'})
-
+        else:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @require_POST
@@ -258,48 +251,137 @@ def fetch_job(request):
 
 @csrf_exempt
 @require_http_methods(["PUT"])
-def edit_job(request, jobId):
-    if request.method == 'PUT':
-        try:
-            data = json.loads(request.body)
-            status = data.get('status')
-            job_name = data.get('jobName')
-            job_description = data.get('jobDescription')
-            job_skills = data.get('jobSkills')
-            experience = data.get('experience')
-            expire = data.get('expire')
-                    
+def edit_job(request):
+    try:
+        data = json.loads(request.body)
+        jobId = request.GET.get('jobId')  
+        emp_id = data.get('emp_id') 
+        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()  
+
+        if is_emp_exists:
             job = Job.objects.get(pk=jobId)
             
-            job.status = status
-            job.jobName = job_name
-            job.jobDescription = job_description
-            job.jobSkills = job_skills
-            job.experience = experience
-            job.expire = expire
+            job.status = data.get('status')
+            job.jobName = data.get('jobName')
+            job.jobDescription = data.get('jobDescription')
+            job.jobSkills = data.get('jobSkills')
+            job.experience = data.get('experience')
+            job.expire = data.get('expire')
             job.save()
             
             return JsonResponse({'message': 'Job updated successfully'})
-        except Job.DoesNotExist:
-            return JsonResponse({'error': 'Job not found'}, status=404)
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed'})
-
+        else:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+    except Job.DoesNotExist:
+        return JsonResponse({'error': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
 @csrf_exempt
 @require_http_methods(["DELETE"])
 def delete_job(request):
-    job_id = request.GET.get('id')
-
-    if not job_id:
-        return JsonResponse({'error': 'Job ID is required'}, status=400)
-
     try:
-        job = Job.objects.get(pk=job_id)
+        data = json.loads(request.body)
+        emp_id = data.get('emp_id') 
+        jobId = request.GET.get('jobId')  
+        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()  
+
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+
+        job = Job.objects.get(pk=jobId)
         job.delete()
+        
         return JsonResponse({'message': 'Job deleted successfully'})
     except Job.DoesNotExist:
         return JsonResponse({'error': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@require_GET
+def fetch_jobs_byCandidate(request):
+    try:
+        data = json.loads(request.body)
+        candidate_id = data.get('candidate_id') 
+        is_emp_exists = User.objects.filter(emp_id=candidate_id, role='candidate').exists() 
+        
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Candidate with the given ID does not exist or is not a candidate'}, status=400)
+        
+        jobs = Job.objects.filter(status="Active")
+        data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
+                 'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
+                 'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
+        return JsonResponse(data, safe=False)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+@require_POST
+def apply_for_job(request):
+    try:
+        data = json.loads(request.body)
+        candidate_id = data.get('candidateId')
+        job_id = request.GET.get('jobId')
+        candidate = User.objects.get(id=candidate_id)
+        Job.objects.get(id=request.GET.get('jobId'))
+        ApplyJob.objects.create(candidate=candidate, jobID=job_id,status='Active')
+        return JsonResponse({'message': 'Job applied successfully'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)})
+    
+@csrf_exempt
+@require_http_methods(["PUT"])
+def withdraw_job(request):
+    try:
+        data = json.loads(request.body)
+        candidate_id = data.get('candidate_id')
+        job_id = request.GET.get('jobId')
+        existing_application = ApplyJob.objects.filter(candidate_id=candidate_id, jobID=job_id, status='Active').exists()
+        
+        if existing_application:
+            ApplyJob.objects.filter(candidate_id=candidate_id, jobID=job_id, status='Active').update(status='Withdrawn')
+            return JsonResponse({'message': 'Job withdrawn successfully'})
+        else:
+            return JsonResponse({'error': 'No active application found for this candidate and job'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+def fetch_notifications_by_user(request):
+    try:
+        user_id = request.GET.get('userId')
+        notifications = Notification.objects.filter(user_id=user_id)
+        notification_data = []
+        for notification in notifications:
+            notification_data.append({
+                'user_id': notification.user_id,
+                'message': notification.message,
+                'date': notification.date,
+                'status': notification.status,
+            })
+        return JsonResponse(notification_data, safe=False)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+def mark_notification_as_read(request):
+    try:
+        data = json.loads(request.body)
+        candidate_id = data.get('candidate_id')
+        notification_id = request.GET.get('notificationId')
+        
+        existing_notification = Notification.objects.filter(id=notification_id, user_id=candidate_id, status='unread').exists()
+        
+        if existing_notification:
+            Notification.objects.filter(id=notification_id, user_id=candidate_id, status='unread').update(status='read')
+            return JsonResponse({'message': 'Notification marked as read'})
+        else:
+            return JsonResponse({'error': 'No unread notification found for this user'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

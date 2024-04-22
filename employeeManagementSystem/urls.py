@@ -22,7 +22,23 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import create_stream, update_stream, get_questions, answer_question,add_result,delete_job, fetch_result,create_job,fetch_job,edit_job
+from recruit.views import (
+    create_stream,
+    update_stream,
+    get_questions,
+    answer_question,
+    add_result,
+    delete_job,
+    fetch_result,
+    create_job,
+    fetch_job,
+    edit_job,
+    fetch_jobs_byCandidate,
+    apply_for_job,
+    withdraw_job,
+    fetch_notifications_by_user,
+    mark_notification_as_read
+)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -66,8 +82,17 @@ urlpatterns = [
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
     path('api/recruit/create_job', create_job, name='create_job'),
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
-    path('api/recruit/edit-job/<int:jobId>', edit_job, name='edit_job'),
+    path('api/recruit/edit-job', edit_job, name='edit_job'),
     path('api/recruit/delete-job', delete_job, name='delete_job'),
+    path('api/candidate/fetch-job-list', fetch_jobs_byCandidate, name='fetch_jobs_byCandidate'),
+    path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
+    path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
+    path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
+    path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
+
+
+
+
 
 ]
 
