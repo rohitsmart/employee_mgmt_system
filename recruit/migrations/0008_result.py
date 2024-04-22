@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('needed', models.IntegerField()),
                 ('round', models.CharField(choices=[(1, 'Round 1'), (2, 'Round 2')], max_length=50)),
                 ('candidate', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user')),
-                # ('scheduler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.scheduler')),
+                ('scheduler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.scheduler')),
             ],
         ),
     ]

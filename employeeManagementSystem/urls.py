@@ -22,8 +22,8 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import create_stream, update_stream, get_questions, answer_question,add_result, fetch_result
-
+from recruit.views import create_stream, update_stream, get_questions, answer_question,save_result, fetch_result,candidate_scheduler
+from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
@@ -62,8 +62,12 @@ urlpatterns = [
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
     path('api/recruit/answerQuestion',answer_question,name='answer_question'),
-    path('api/recruit/addResult',add_result,name='add_result'),
+    path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
+    path('api/recruit/scheduler/candidate-scheduler',candidate_scheduler,name='candidate_scheduler'),
+    path('api/recruit/scheduler/update-candidate-schedulerBycandidateID',update_candidate_scheduler,name='update_candidate_scheduler'),
+    path('api/recruit/scheduler/fetch-my-scheduler',fetch_my_scheduler,name='fetch_my_scheduler'),
+    path('api/recruit/candidate/track',track,name='track'),
 ]
 
 

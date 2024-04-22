@@ -11,6 +11,9 @@ import random
 from recruit.models import Questions
 from recruit.models import Exam
 from recruit.models import Result
+from recruit.models import Scheduler
+from recruit.models import Track
+from users.models import User
 
 
 @csrf_exempt
@@ -138,7 +141,7 @@ def answer_question(request):
 
 @require_POST
 @csrf_exempt
-def add_result(request):               #candidate will get only 5 questions according to that result will bw calculated
+def save_result(request):               #candidate will get only 5 questions according to that result will bw calculated
     if request.method=='POST':
         try:
             data = json.loads(request.body)
@@ -146,6 +149,7 @@ def add_result(request):               #candidate will get only 5 questions acco
             date=data.get('date')
             maximum=data.get('maximum')
             needed=data.get('needed')
+            scheduler_id=data.get('scheduler_id')
             
             calculate_marks=Exam.objects.filter(candidate_id=candidate_id, status='correct')
             total_marks=len(calculate_marks)*2
@@ -156,41 +160,54 @@ def add_result(request):               #candidate will get only 5 questions acco
                 maximum=maximum,
                 needed=needed,
                 obtained=total_marks,
+                scheduler_id=scheduler_id
             )
             result.save()
-            # results=Exam.objects.filter(candidate_id=candidate_id)
-            # result_declared=[]
-            # for result_item in results:
-            #     result_declared.append({
-            #         'question_id':result_item.question_id,
-            #        'candidateResponse':result_item.candidateResponse,
-            #         'correctResponse':result_item.correctResponse,
-            #        'status':result_item.status
-            #     }) 
-                # return JsonResponse({'result':result_declared})
             if total_marks>=needed:
                 result.status="pass"
                 result.save()
-                return JsonResponse({'result': result_declared, 'message': 'Candidate cleared the exam'})
+                candidate = User.objects.get(id=candidate_id)
+                track = Track.objects.create(
+                    candidate=candidate,
+                    currrentStatus="Passed Exam",
+                    round1="Cleared"
+                )
+                track.save()
+                return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam'})          
+            
             else:
                 result.status="fail"
                 result.save()
-                return JsonResponse({'message': 'candidate failed the exam'})
+                candidate = User.objects.get(id=candidate_id)
+                track = Track.objects.create(
+                    candidate=candidate,
+                    currrentStatus="failed the Exam",
+                    round1="failed"
+                )
+                track.save()
+                return JsonResponse({'total_marks':total_marks,'message': 'candidate failed the exam'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'}) 
     
-require_GET
+@require_GET
 def fetch_result(request):
     if request.method=='GET':
         try:
             candidate_id=request.GET.get('candidate_id')
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+               json_question = json.load(file)
+
             results=Exam.objects.filter(candidate_id=candidate_id)
             result_declared=[]
             for result_item in results:
+                question_id = result_item.question_id
+                question_data = next((question for question in json_question if question['id'] == question_id), None)              
                 result_declared.append({
                     'question_id':result_item.question_id,
+                    'question': question_data['question'],
                    'candidateResponse':result_item.candidateResponse,
                     'correctResponse':result_item.correctResponse,
                    'status':result_item.status
@@ -202,7 +219,94 @@ def fetch_result(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})       
             
-            
+@require_POST 
+@csrf_exempt
+def candidate_scheduler(request):
+    if request.method=='POST':
+        try:
+            data = json.loads(request.body)
+            scheduledDate= data.get('scheduledDate')
+            round=data.get('round')
+            candidate_id=data.get('candidate_id')
+            scheduler = Scheduler.objects.create(          
+                scheduledDate=scheduledDate,
+                round=round,
+                candidate_id=candidate_id
+            )
+            scheduler.save()
+            scheduler.status='started'
+            scheduler.save()
+            return JsonResponse({'message':'exam scheduled successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'message':'only post method'})
+
+
+@require_http_methods(['PUT'])             
+@csrf_exempt
+def update_candidate_scheduler(request):     
+    if request.method == 'PUT':
+        # here we can update the schedule for the candidateif the candidate clear the round or if the exam has 
+        # has to be reshedued 
+        try:
+            candidate_id=request.GET.get('id')
+            if not candidate_id:
+                return JsonResponse({'message':'sscheduler not found for the candidate'})
+            data = json.loads(request.body)
+            # candidate_id=data.get('candidate_id')
+            scheduledDate=data.get('scheduledDate')
+            round=data.get('round')
+            scheduler = Scheduler.objects.get(id=candidate_id)
+            scheduler.scheduledDate=scheduledDate
+            scheduler.round=round
+            scheduler.save()
+            return JsonResponse({'message':'exam schedule updated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'message':'only put method allows'})
+    
+@require_GET
+@csrf_exempt
+def fetch_my_scheduler(request):
+    if request.method=='GET':
+        try:
+            candidate_id=request.GET.get('id')
+            if not candidate_id:
+                return JsonResponse({'message':'schedule not found for the candidate'})
+            scheduler = Scheduler.objects.get(id=candidate_id)
+            return JsonResponse({'scheduledDate':scheduler.scheduledDate,
+                                 'round':scheduler.round})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'message':'only get method allows'})       
+        
+@require_GET
+def track(request):
+    if request.method=='GET':
+        try:
+            candidate_id=request.GET.get('id')
+            if not candidate_id:
+                return JsonResponse({'message':'track not found for the candidate'})
+            tracks = Track.objects.filter(candidate_id=candidate_id)
+            # leaves=Leave.objects.filter(user_id=user_id)
+            # if not leaves:
+            #     return JsonResponse({'message':'leave not found'})
+            track_result=[]
+            for track in tracks:
+                track_result.append({
+                    'currrentStatus':track.currrentStatus,
+                   'round1':track.round1
+                }) 
+            return JsonResponse({'track':track_result})
+            # return JsonResponse({'currrentStatus':track.currrentStatus,     
+            #                      'round1':track.round1})          #here i will include the rest of the rounds according to the requirements
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'message':'only get method allows'})
     
     
 
