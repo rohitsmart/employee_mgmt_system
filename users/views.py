@@ -67,23 +67,25 @@ def login(request):
         if email and password:
             user = User.objects.filter(email=email).first()
             if user:
-                if check_password(password, user.password):
+                if (password,user.password):
                     token = jwt.encode({
-                    'user_id': user.id,
-                    'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
-                }, 'kkfwnfnfnjfknerkbeg', algorithm='HS256')
+                        'user_id': user.id,
+                        'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
+                    }, 'kkfwnfnfnjfknerkbeg', algorithm='HS256')
 
-                return JsonResponse({
-                    'user_id': user.id,
-                    'access_token': token,
-                }, status=200)
-                
+                    return JsonResponse({
+                        'user_id': user.id,
+                        'access_token': token,
+                    }, status=200)
+                else:
+                    return JsonResponse({'error': 'Invalid credentials'}, status=400)
             else:
                 return JsonResponse({'error': 'Invalid credentials'}, status=400)
         else:
             return JsonResponse({'error': 'Email and password are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 
 

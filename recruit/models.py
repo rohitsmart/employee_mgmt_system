@@ -4,6 +4,7 @@ from users.models import User
 class ApplyJob(models.Model):
     id=models.AutoField(primary_key=True)
     candidate=models.ForeignKey(User, on_delete=models.CASCADE)
+    status=models.CharField(max_length=10,null=True)
     jobID=models.CharField(max_length=100)
     
 class Role(models.Model):

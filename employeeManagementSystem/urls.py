@@ -22,8 +22,24 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import create_stream, update_stream, get_questions, answer_question,save_result, fetch_result,candidate_scheduler
-from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track
+from recruit.views import (
+    create_stream,
+    update_stream,
+    get_questions,
+    answer_question,
+    add_result,
+    delete_job,
+    fetch_result,
+    create_job,
+    fetch_job,
+    edit_job,
+    fetch_job_list,
+    apply_for_job,
+    withdraw_job,
+    fetch_notifications_by_user,
+    mark_notification_as_read
+)
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
@@ -64,10 +80,15 @@ urlpatterns = [
     path('api/recruit/answerQuestion',answer_question,name='answer_question'),
     path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
-    path('api/recruit/scheduler/candidate-scheduler',candidate_scheduler,name='candidate_scheduler'),
-    path('api/recruit/scheduler/update-candidate-schedulerBycandidateID',update_candidate_scheduler,name='update_candidate_scheduler'),
-    path('api/recruit/scheduler/fetch-my-scheduler',fetch_my_scheduler,name='fetch_my_scheduler'),
-    path('api/recruit/candidate/track',track,name='track'),
+    path('api/recruit/create_job', create_job, name='create_job'),
+    path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
+    path('api/recruit/edit-job', edit_job, name='edit_job'),
+    path('api/recruit/delete-job', delete_job, name='delete_job'),
+    path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
+    path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
+    path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
+    path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
+    path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
 ]
 
 
