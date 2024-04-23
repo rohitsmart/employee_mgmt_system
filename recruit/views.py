@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 import os
 from django.conf import settings
 from django.shortcuts import render
@@ -7,12 +7,15 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
+from project.decorators import jwt_auth_required
 from recruit.models import Stream
 import random
 from recruit.models import Questions
 from recruit.models import Exam
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
+from rest_framework_simplejwt.authentication import JWTAuthentication
+
 
 
 @csrf_exempt
@@ -209,12 +212,13 @@ def fetch_result(request):
 
 @csrf_exempt
 @require_POST
+@jwt_auth_required
 def create_job(request):
     try:
+        user =request.user_id
         data = json.loads(request.body)
-        emp_id = data.get('emp_id') 
-        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()
-        
+        is_emp_exists = User.objects.filter(id=user, role='employee').exists()
+       
         if is_emp_exists:
             Job.objects.create(   
                 status=data.get('status'),       
@@ -223,7 +227,7 @@ def create_job(request):
                 jobSkills=data.get('jobSkills'),
                 experience=data.get('experience'),
                 expire=data.get('expire'),
-                creater_id=emp_id  
+                creater_id=user  
             )
             return JsonResponse({'message': 'Job created successfully'})
         else:
@@ -233,30 +237,37 @@ def create_job(request):
 
 @csrf_exempt
 @require_POST
+@jwt_auth_required
 def fetch_job(request):
-    query = request.GET.get('job')  
-    
+    userId = request.user_id
+    query = request.GET.get('job') 
+
+    is_emp_exists = User.objects.filter(id=userId, role='employee').exists()
+    if not is_emp_exists:
+        return JsonResponse({'error': 'User not authorized or does not exist'}, status=403)
+
     if query == 'all':
         jobs = Job.objects.all()
     elif query in ['Active', 'Expired', 'Hide', 'InActive']:
         jobs = Job.objects.filter(status=query)
     else:
-        return JsonResponse({'error': 'Invalid query parameter'})
-    
+        return JsonResponse({'error': 'Invalid query parameter'}, status=400)
+
     data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
              'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
              'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
-    
+
     return JsonResponse(data, safe=False)
 
 @csrf_exempt
 @require_http_methods(["PUT"])
+@jwt_auth_required
 def edit_job(request):
     try:
         data = json.loads(request.body)
-        jobId = request.GET.get('jobId')  
-        emp_id = data.get('emp_id') 
-        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()  
+        jobId = request.GET.get('jobId') 
+        userId =request.user_id
+        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
 
         if is_emp_exists:
             job = Job.objects.get(pk=jobId)
@@ -278,13 +289,13 @@ def edit_job(request):
         return JsonResponse({'error': str(e)}, status=500)
     
 @csrf_exempt
+@jwt_auth_required
 @require_http_methods(["DELETE"])
 def delete_job(request):
     try:
-        data = json.loads(request.body)
-        emp_id = data.get('emp_id') 
+        userId =request.user_id
         jobId = request.GET.get('jobId')  
-        is_emp_exists = User.objects.filter(id=emp_id, role='employee').exists()  
+        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
 
         if not is_emp_exists:
             return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
@@ -300,46 +311,62 @@ def delete_job(request):
 
 
 @require_GET
-def fetch_jobs_byCandidate(request):
+@jwt_auth_required
+def fetch_job_list(request):
     try:
-        data = json.loads(request.body)
-        candidate_id = data.get('candidate_id') 
-        is_emp_exists = User.objects.filter(emp_id=candidate_id, role='candidate').exists() 
-        
-        if not is_emp_exists:
+        userId =request.user_id
+        isCandidateExit = User.objects.filter(id=userId, role='candidate').exists() 
+        if not isCandidateExit:
             return JsonResponse({'error': 'Candidate with the given ID does not exist or is not a candidate'}, status=400)
         
-        jobs = Job.objects.filter(status="Active")
+        current_date = datetime.now().date()
+        jobs = Job.objects.filter(status="Active", expire__gte=current_date)
+        
         data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
                  'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
                  'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
+        
         return JsonResponse(data, safe=False)
-    
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
 
 @csrf_exempt
 @require_POST
+@jwt_auth_required
 def apply_for_job(request):
     try:
-        data = json.loads(request.body)
-        candidate_id = data.get('candidateId')
+        userId = request.user_id
         job_id = request.GET.get('jobId')
-        candidate = User.objects.get(id=candidate_id)
-        Job.objects.get(id=request.GET.get('jobId'))
-        ApplyJob.objects.create(candidate=candidate, jobID=job_id,status='Active')
+        is_candidate_exist = User.objects.filter(id=userId, role='candidate').exists()
+        if not is_candidate_exist:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+
+        try:
+            job = Job.objects.get(id=job_id)
+        except Job.DoesNotExist:
+            return JsonResponse({'error': 'Job does not exist'}, status=404)
+
+        candidate = User.objects.get(id=userId)
+        ApplyJob.objects.create(candidate=candidate, jobID=job_id, status='Active')
+
         return JsonResponse({'message': 'Job applied successfully'})
+
     except Exception as e:
         return JsonResponse({'error': str(e)})
     
 @csrf_exempt
 @require_http_methods(["PUT"])
+@jwt_auth_required
 def withdraw_job(request):
     try:
-        data = json.loads(request.body)
-        candidate_id = data.get('candidate_id')
+        candidate_id =request.user_id
         job_id = request.GET.get('jobId')
+        
+        is_candidate_exist = User.objects.filter(id=candidate_id, role='candidate').exists()
+        if not is_candidate_exist:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+
         existing_application = ApplyJob.objects.filter(candidate_id=candidate_id, jobID=job_id, status='Active').exists()
         
         if existing_application:
@@ -351,10 +378,15 @@ def withdraw_job(request):
         return JsonResponse({'error': str(e)}, status=500)
     
 
+@jwt_auth_required
 def fetch_notifications_by_user(request):
     try:
-        user_id = request.GET.get('userId')
-        notifications = Notification.objects.filter(user_id=user_id)
+        candidate_id =request.user_id
+        is_candidate_exist = User.objects.filter(id=candidate_id, role='candidate').exists()
+        if not is_candidate_exist:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+
+        notifications = Notification.objects.filter(user_id=candidate_id)
         notification_data = []
         for notification in notifications:
             notification_data.append({
@@ -370,12 +402,15 @@ def fetch_notifications_by_user(request):
 
 @csrf_exempt
 @require_http_methods(["PUT"])
+@jwt_auth_required
 def mark_notification_as_read(request):
     try:
-        data = json.loads(request.body)
-        candidate_id = data.get('candidate_id')
+        candidate_id =request.user_id
         notification_id = request.GET.get('notificationId')
-        
+        is_candidate_exist = User.objects.filter(id=candidate_id, role='candidate').exists()
+        if not is_candidate_exist:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+
         existing_notification = Notification.objects.filter(id=notification_id, user_id=candidate_id, status='unread').exists()
         
         if existing_notification:
