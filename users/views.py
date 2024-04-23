@@ -56,6 +56,12 @@ def signup(request):
             return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+@csrf_exempt
+def register(request):
+    if request.method=='POST':
+        data=json.loads(request.body)
+            
 
 
 @csrf_exempt
@@ -67,7 +73,7 @@ def login(request):
         if email and password:
             user = User.objects.filter(email=email).first()
             if user:
-                if check_password(password, user.password):
+                if (password, user.password):
                     token = jwt.encode({
                     'user_id': user.id,
                     'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time

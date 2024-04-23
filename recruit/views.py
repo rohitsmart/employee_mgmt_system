@@ -58,44 +58,141 @@ def update_stream(request):
         return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'})
 
 
+
 @require_GET
 def get_questions(request):
-    if request.method=='GET':
+    if request.method == 'GET':
         try:
+            candidate_id = request.GET.get('id')
+            if not candidate_id:
+                return JsonResponse({"error": "Candidate ID is required"})
+
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
-              questions_data = json.load(file)
-              stream_id = request.GET.get('id') 
+                questions_data = json.load(file)
+            stream_id = request.GET.get('id') 
             total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
             if len(total_questions) < 5:
-              return JsonResponse({"message": "questions are less than requirement"})
-    
+                return JsonResponse({"message": "Questions are less than requirement"})
             questions = random.sample(total_questions, 5)
             all_questions = []
             for question in questions:
                 all_question = {
                     "id": question["id"],
-                   "question": question["question"],
-                   "option1": question["option1"],
-                   "option2": question["option2"],
-                   "option3": question["option3"],
-                   "option4": question["option4"],
-                   "type": question["type"],
-                   "level": question["level"],
-                   "stream_id": question["stream_id"]
-                   }
+                    "question": question["question"],
+                    "option1": question["option1"],
+                    "option2": question["option2"],
+                    "option3": question["option3"],
+                    "option4": question["option4"],
+                    "type": question["type"],
+                    "level": question["level"],
+                    "stream_id": question["stream_id"]
+                }
                 all_questions.append(all_question)
-                return JsonResponse({"questions": all_questions})
+
+            # Save questions attempted by the candidate
+            for question in questions:
+                Questions.objects.create(
+                    candidate_id=candidate_id,
+                    question_id=question["id"],
+                    correctResponse=question["correctAnswer"]
+                )
+
+            return JsonResponse({"questions": all_questions})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+@require_GET
+def next_question(request):
+    if request.method == 'GET':
+        try:
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+                questions_data = json.load(file)
+            stream_id = request.GET.get('id')
 
+            # Fetch the last fetched questions for the current candidate from session
+            last_fetched_questions = request.session.get('last_fetched_questions', [])
+            
+            # Filter questions by stream_id and excluding the already fetched questions
+            available_questions = [question for question in questions_data
+                                   if question.get('stream_id') == int(stream_id)
+                                   and question not in last_fetched_questions]
 
+            if len(available_questions) == 0:
+                return JsonResponse({"message": "No more questions available"})
+
+            # Select a random question from available questions
+            next_question = random.choice(available_questions)
+
+            # Update the last fetched questions for the current candidate in session
+            last_fetched_questions.append(next_question)
+            # Keep only the latest 5 questions
+            if len(last_fetched_questions) > 5:
+                last_fetched_questions.pop(0)
+
+            # Update the session with the latest fetched questions
+            request.session['last_fetched_questions'] = last_fetched_questions
+
+            question_response = {
+                "id": next_question["id"],
+                "question": next_question["question"],
+                "option1": next_question["option1"],
+                "option2": next_question["option2"],
+                "option3": next_question["option3"],
+                "option4": next_question["option4"],
+                "type": next_question["type"],
+                "level": next_question["level"],
+                "stream_id": next_question["stream_id"]
+            }
+            return JsonResponse({"question": question_response})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+    
+@require_GET
+def previous_question(request):
+    if request.method == 'GET':
+        try:
+            # Fetch the last fetched questions for the current candidate from session
+            last_fetched_questions = request.session.get('last_fetched_questions', [])
+
+            # Check if there are any previous questions available
+            if len(last_fetched_questions) < 2:
+                return JsonResponse({"message": "No previous question available"})
+
+            # Retrieve the previous question
+            previous_question = last_fetched_questions[-2]
+
+            # Update the session to remove the current question
+            request.session['last_fetched_questions'] = last_fetched_questions[:-1]
+
+            question_response = {
+                "id": previous_question["id"],
+                "question": previous_question["question"],
+                "option1": previous_question["option1"],
+                "option2": previous_question["option2"],
+                "option3": previous_question["option3"],
+                "option4": previous_question["option4"],
+                "type": previous_question["type"],
+                "level": previous_question["level"],
+                "stream_id": previous_question["stream_id"]
+            }
+            return JsonResponse({"question": question_response})
+
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+
+   
 
 @require_POST
 @csrf_exempt
-def answer_question(request):
+def save_answer(request):           #in this we are savig the answer by the candidate
     if request.method == 'POST':
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
@@ -106,6 +203,7 @@ def answer_question(request):
                 question_id = data.get('id')
                 candidateResponse = data.get('candidateResponse') 
                 Date = data.get('Date')
+                scheduler_id=data.get('scheduler_id')
                                            
                 question = next((question for question in json_question if question.get('id') == question_id))
                 if question:
@@ -120,7 +218,8 @@ def answer_question(request):
                         question_id=question_id,
                         candidateResponse=candidateResponse,
                         correctResponse=correctAnswer,
-                        Date=Date,                      
+                        Date=Date,   
+                        scheduler_id=scheduler_id                   
                     )
                     exam.save()
                     # if candidateResponse == correctAnswer:
@@ -141,7 +240,7 @@ def answer_question(request):
 
 @require_POST
 @csrf_exempt
-def save_result(request):               #candidate will get only 5 questions according to that result will bw calculated
+def submit_exam(request):               #candidate will get only 5 questions according to that result will bw calculated
     if request.method=='POST':
         try:
             data = json.loads(request.body)
@@ -311,39 +410,32 @@ def track(request):
         return JsonResponse({'message':'only get method allows'})
  
 
-@require_POST
-@csrf_exempt
-def next_question(request, candidate_id):    
-    if request.method == 'POST':
-        try:
-            latest_exam = Exam.objects.filter(candidate_id=candidate_id).latest('Date')
-            latest_question_id = latest_exam.question_id
-            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
-            
-            with open(json_file_path, 'r') as file:
-                json_question = json.load(file)
-            
-            latest_question_index = next(
-                (index for index, question in enumerate(json_question) if question['id'] == latest_question_id), -1)
-            
-            next_question_index = latest_question_index + 1
-            if next_question_index < len(json_question):
-                next_question = json_question[next_question_index]
-                return JsonResponse({'next_question': next_question})
-            else:
-                return JsonResponse({'error': 'No more next questions available'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed for fetching the next question'})
+# @csrf_exempt
+# @require_GET
+# def next_question(request):
+#     if request.method == 'GET':
+#         try:
+#             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+#             with open(json_file_path, 'r') as file:
+#                 json_data = json.load(file)
+#                 print(json_data)
+#                 question_id = request.GET.get('id')
+#                 next_question = None
+#                 for idx, question in enumerate(json_data):
+#                     if question.get('id') == question_id:
+#                         if idx + 1 < len(json_data):
+#                             next_question = json_data[idx + 1]
+#                         break
+#                 if next_question:
+#                     return JsonResponse(next_question)
+#                 else:
+#                     return JsonResponse({'message': 'No next question found.'})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)})
+#     else:
+#         return JsonResponse({'error': 'Only GET requests are allowed for fetching the next question'})
 
-        
-            
-
-            
-            # candidate_id=data.get('candidate_id')
-
-    
+   
           
     
     

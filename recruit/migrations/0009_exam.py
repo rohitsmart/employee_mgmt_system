@@ -24,7 +24,7 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(max_length=50, null=True)),
                 ('candidate', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user')),
                 # ('question', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.questions')),
-                # ('scheduler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.scheduler')),
+                ('scheduler', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.scheduler')),
             ],
         ),
     ]
