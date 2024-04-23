@@ -27,7 +27,7 @@ from recruit.views import (
     update_stream,
     get_questions,
     answer_question,
-    add_result,
+    save_result,
     delete_job,
     fetch_result,
     create_job,
