@@ -11,7 +11,7 @@ from project.decorators import jwt_auth_required
 from recruit.models import Stream
 import random
 from recruit.models import Questions
-from recruit.models import Exam
+from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -337,6 +337,157 @@ def track(request):
     else:
         return JsonResponse({'message':'only get method allows'})
     
+
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def create_job(request):
+    try:
+        user =request.user_id
+        data = json.loads(request.body)
+        is_emp_exists = User.objects.filter(id=user, role='employee').exists()
+       
+        if is_emp_exists:
+            Job.objects.create(   
+                status=data.get('status'),       
+                jobName=data.get('jobName'),
+                jobDescription=data.get('jobDescription'),
+                jobSkills=data.get('jobSkills'),
+                experience=data.get('experience'),
+                expire=data.get('expire'),
+                creater_id=user  
+            )
+            return JsonResponse({'message': 'Job created successfully'})
+        else:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def fetch_job(request):
+    userId = request.user_id
+    query = request.GET.get('job') 
+
+    is_emp_exists = User.objects.filter(id=userId, role='employee').exists()
+    if not is_emp_exists:
+        return JsonResponse({'error': 'User not authorized or does not exist'}, status=403)
+
+    if query == 'all':
+        jobs = Job.objects.all()
+    elif query in ['Active', 'Expired', 'Hide', 'InActive']:
+        jobs = Job.objects.filter(status=query)
+    else:
+        return JsonResponse({'error': 'Invalid query parameter'}, status=400)
+
+    data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
+             'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
+             'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
+
+    return JsonResponse(data, safe=False)
+
+@csrf_exempt
+@require_http_methods(["PUT"])
+@jwt_auth_required
+def edit_job(request):
+    try:
+        data = json.loads(request.body)
+        jobId = request.GET.get('jobId') 
+        userId =request.user_id
+        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
+
+        if is_emp_exists:
+            job = Job.objects.get(pk=jobId)
+            
+            job.status = data.get('status')
+            job.jobName = data.get('jobName')
+            job.jobDescription = data.get('jobDescription')
+            job.jobSkills = data.get('jobSkills')
+            job.experience = data.get('experience')
+            job.expire = data.get('expire')
+            job.save()
+            
+            return JsonResponse({'message': 'Job updated successfully'})
+        else:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+    except Job.DoesNotExist:
+        return JsonResponse({'error': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+@jwt_auth_required
+@require_http_methods(["DELETE"])
+def delete_job(request):
+    try:
+        userId =request.user_id
+        jobId = request.GET.get('jobId')  
+        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
+
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+
+        job = Job.objects.get(pk=jobId)
+        job.delete()
+        
+        return JsonResponse({'message': 'Job deleted successfully'})
+    except Job.DoesNotExist:
+        return JsonResponse({'error': 'Job not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def accept_reject(request):
+    try:
+        user_id = request.user_id
+        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
+        
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+
+        applied_jobs = ApplyJob.objects.filter(status='Active')
+        for job in applied_jobs:
+            find_job = Job.objects.get(id=job.jobID)
+            notification = Notification.objects.create(
+                message = "Congrats!! You're eligible for the 1st round interview for the role of " + find_job.jobName,
+                date = date.today(),
+                status = 'unread',
+                jobId = find_job.id,
+                jobName = find_job.jobName,
+                currentStatus = 'Round1',
+                user = job.candidate
+            )
+            notification.save()
+            Track.objects.create(
+                candidate = job.candidate,
+                currentStatus = 'Eligible for round1',
+                round1 = 'Pending'
+            )
+
+        return JsonResponse({'message': 'Applications are accepted & sent notification to them'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@jwt_auth_required
+def filter_profile(request):
+    try:
+        user_id = request.user_id
+        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
+        
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+
+        applied_jobs = ApplyJob.objects.filter(status='Active').values()  # Convert queryset to list of dictionaries
+        
+        return JsonResponse({'applied_jobs': list(applied_jobs)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
 @require_GET
 def fetch_stream_with_questions(request):
     if request.method == 'GET':
@@ -452,6 +603,9 @@ def fetch_notifications_by_user(request):
                 'message': notification.message,
                 'date': notification.date,
                 'status': notification.status,
+                'jobName': notification.jobName,
+                'currentStatus': notification.currentStatus,
+                'jobId': notification.jobId
             })
         return JsonResponse(notification_data, safe=False)
     except Exception as e:

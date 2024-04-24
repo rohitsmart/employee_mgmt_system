@@ -16,6 +16,10 @@ import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+
 
 from .models import User
 
@@ -124,24 +128,23 @@ def login(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
-
-
-    
-
-# @csrf_exempt
-# # @api_view(['POST'])
-# # @permission_classes([IsAuthenticated])
-# # @authentication_classes([JWTAuthentication])
-# def user_logout(request):
-#         if request.method == 'POST':
-#             # Access the refresh token from request headers or cookies
-#             try:
-#                 refresh_token = request.data["refresh"]
-#                 #refresh_token = request.META.get('HTTP_AUTHORIZATION', '').split()[1]
-#                 token = RefreshToken(refresh_token)
-#                 token.blacklist()
-#                 return JsonResponse({'message':'User logout successfully'})
-#             except Exception as err:
-#                 return JsonResponse({'message':str(err)})
-#         else:
-#             return JsonResponse({'error': 'Invalid request method.'})
+@csrf_exempt
+@require_POST
+def create_admin(request):
+    try:
+        admin_exists = User.objects.filter(role='admin').exists()
+        
+        if not admin_exists:
+            User.objects.create(
+                userName='admin',
+                fullName='Admin',
+                email='admin@gmail.com',
+                role='admin',
+                mobileNumber='0123456789',
+                password='password'
+            )
+            return JsonResponse({'Success': 'Welcome Admin'})
+        else:
+            return JsonResponse({'error': 'Admin exists already'}, status=409)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
