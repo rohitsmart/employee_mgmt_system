@@ -35,6 +35,7 @@ class Questions(models.Model):
     )
     level = models.IntegerField(choices=LEVEL_CHOICES,null=True)
     stream =models.ForeignKey(Stream, on_delete=models.CASCADE, null=True)
+    candidate = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
