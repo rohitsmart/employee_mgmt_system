@@ -15,7 +15,6 @@ from recruit.models import Scheduler
 from recruit.models import Track
 from users.models import User
 
-
 @csrf_exempt
 @require_POST
 # @jwt_auth_required
@@ -56,11 +55,27 @@ def update_stream(request):
             return JsonResponse({'error': 'stream not found'})
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'})
-
-
+    
+@require_GET
+def fetch_stream(request):
+    if request.method == 'GET':
+        try:
+            streams=Stream.objects.all()
+            if not streams:
+                return JsonResponse({'message': 'device not found'})
+            stream_name = []
+            for stream in streams:
+                stream_name.append({
+                    'streamName': stream.streamName,
+                })
+                return JsonResponse({'streams': stream_name})
+        except Stream.DoesNotExist:
+            return JsonResponse({'error':'stream not found'})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})
 
 @require_GET
-def get_questions(request):
+def get_questions(request):         #this api will get the random question and save the record on the database 
     if request.method == 'GET':
         try:
             candidate_id = request.GET.get('id')
@@ -103,92 +118,6 @@ def get_questions(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-@require_GET
-def next_question(request):
-    if request.method == 'GET':
-        try:
-            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
-            with open(json_file_path, 'r') as file:
-                questions_data = json.load(file)
-            stream_id = request.GET.get('id')
-
-            # Fetch the last fetched questions for the current candidate from session
-            last_fetched_questions = request.session.get('last_fetched_questions', [])
-            
-            # Filter questions by stream_id and excluding the already fetched questions
-            available_questions = [question for question in questions_data
-                                   if question.get('stream_id') == int(stream_id)
-                                   and question not in last_fetched_questions]
-
-            if len(available_questions) == 0:
-                return JsonResponse({"message": "No more questions available"})
-
-            # Select a random question from available questions
-            next_question = random.choice(available_questions)
-
-            # Update the last fetched questions for the current candidate in session
-            last_fetched_questions.append(next_question)
-            # Keep only the latest 5 questions
-            if len(last_fetched_questions) > 5:
-                last_fetched_questions.pop(0)
-
-            # Update the session with the latest fetched questions
-            request.session['last_fetched_questions'] = last_fetched_questions
-
-            question_response = {
-                "id": next_question["id"],
-                "question": next_question["question"],
-                "option1": next_question["option1"],
-                "option2": next_question["option2"],
-                "option3": next_question["option3"],
-                "option4": next_question["option4"],
-                "type": next_question["type"],
-                "level": next_question["level"],
-                "stream_id": next_question["stream_id"]
-            }
-            return JsonResponse({"question": question_response})
-
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-    
-@require_GET
-def previous_question(request):
-    if request.method == 'GET':
-        try:
-            # Fetch the last fetched questions for the current candidate from session
-            last_fetched_questions = request.session.get('last_fetched_questions', [])
-
-            # Check if there are any previous questions available
-            if len(last_fetched_questions) < 2:
-                return JsonResponse({"message": "No previous question available"})
-
-            # Retrieve the previous question
-            previous_question = last_fetched_questions[-2]
-
-            # Update the session to remove the current question
-            request.session['last_fetched_questions'] = last_fetched_questions[:-1]
-
-            question_response = {
-                "id": previous_question["id"],
-                "question": previous_question["question"],
-                "option1": previous_question["option1"],
-                "option2": previous_question["option2"],
-                "option3": previous_question["option3"],
-                "option4": previous_question["option4"],
-                "type": previous_question["type"],
-                "level": previous_question["level"],
-                "stream_id": previous_question["stream_id"]
-            }
-            return JsonResponse({"question": question_response})
-
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-
-   
 
 @require_POST
 @csrf_exempt
@@ -319,7 +248,6 @@ def fetch_result(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})       
  
-
 @require_POST 
 @csrf_exempt
 def candidate_scheduler(request):
@@ -383,7 +311,6 @@ def fetch_my_scheduler(request):
     else:
         return JsonResponse({'message':'only get method allows'})       
  
-
 @require_GET
 def track(request):
     if request.method=='GET':
@@ -408,34 +335,55 @@ def track(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only get method allows'})
- 
+    
+@require_GET
+def fetch_stream_with_questions(request):
+    if request.method == 'GET':
+        try:
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+                questions_data = json.load(file)
+                
+            stream_id = request.GET.get('id') 
+            if not stream_id:
+                return JsonResponse({'message': 'stream not found'})
 
-# @csrf_exempt
-# @require_GET
-# def next_question(request):
-#     if request.method == 'GET':
-#         try:
-#             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
-#             with open(json_file_path, 'r') as file:
-#                 json_data = json.load(file)
-#                 print(json_data)
-#                 question_id = request.GET.get('id')
-#                 next_question = None
-#                 for idx, question in enumerate(json_data):
-#                     if question.get('id') == question_id:
-#                         if idx + 1 < len(json_data):
-#                             next_question = json_data[idx + 1]
-#                         break
-#                 if next_question:
-#                     return JsonResponse(next_question)
-#                 else:
-#                     return JsonResponse({'message': 'No next question found.'})
-#         except Exception as e:
-#             return JsonResponse({'error': str(e)})
-#     else:
-#         return JsonResponse({'error': 'Only GET requests are allowed for fetching the next question'})
+            # Fetching the stream
+            stream = Stream.objects.get(id=stream_id)
+            stream_name = stream.streamName
+                
+            total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
+            all_questions = []
+            
+            for question in total_questions:
+                all_question = {
+                    "id": question["id"],
+                    "question": question["question"],
+                    "option1": question["option1"],
+                    "option2": question["option2"],
+                    "option3": question["option3"],
+                    "option4": question["option4"],
+                    "type": question["type"],
+                    "level": question["level"],
+                    "stream_id": question["stream_id"]
+                }
+                all_questions.append(all_question)
+                
+            if not all_questions:
+                return JsonResponse({'message': 'No questions found for this stream ID'})
+                
+            return JsonResponse({'streamName': stream_name, 'all_questions': all_questions})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
 
-   
+
+
+
+
+
           
     
     

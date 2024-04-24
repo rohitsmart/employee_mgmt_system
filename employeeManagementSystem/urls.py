@@ -12,7 +12,7 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import signup
-from users.views import login
+from users.views import login,register_candidate
 # , logout,get_empID
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
@@ -22,9 +22,9 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import create_stream, update_stream, next_question,previous_question, save_answer,submit_exam, fetch_result,candidate_scheduler
-from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions
-
+from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
+from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
+#  next_question,previous_question,
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -62,8 +62,8 @@ urlpatterns = [
     path('api/leave/delete_leave',delete_leave, name='delete_leave'), 
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
-    path('api/recruit/next-question',next_question,name='next_question'),  
-    path('api/recruit/previous-question',previous_question,name='previous_question'),  
+    # path('api/recruit/next-question',next_question,name='next_question'),  
+    # path('api/recruit/previous-question',previous_question,name='previous_question'),  
     path('api/recruit/saveAnswer',save_answer,name='save_answer'),
     path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
@@ -72,6 +72,9 @@ urlpatterns = [
     path('api/recruit/scheduler/fetch-my-scheduler',fetch_my_scheduler,name='fetch_my_scheduler'),
     path('api/recruit/candidate/track',track,name='track'),
     path('api/recruit/candidate/questions/get-questions',get_questions,name='get_questions'),
+    path('api/users/candidate/register-candidate',register_candidate,name='register_candidate'),
+    path('api/recruit/get-stream-with-questions',fetch_stream_with_questions,name='fetch_stream_with_questions'),
+    path('api/recruit/get-stream',fetch_stream,name='fetch_stream'),
 ]
 
 

@@ -15,7 +15,7 @@ from django.contrib.auth import authenticate
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
-
+from django.views.decorators.http import require_GET, require_POST
 
 from .models import User
 
@@ -58,9 +58,40 @@ def signup(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
     
 @csrf_exempt
-def register(request):
+@require_POST
+def register_candidate(request):
     if request.method=='POST':
-        data=json.loads(request.body)
+        try:
+            data=json.loads(request.body)
+            # userName=data.get('userName')
+            fullName=data.get('fullName')
+            # address=data.get('address')
+            degree=data.get('degree')
+            email=data.get('email')
+            mobileNumber=data.get('mobileNumber')
+            cv_url=data.get('cv_url')
+            role='employee'
+        
+            candidate=User.objects.create(
+            # userName=userName,
+            fullName=fullName,
+            # address=address,
+            degree=degree,
+            email=email,
+            mobileNumber=mobileNumber,
+            cv_url=cv_url,
+            role=role
+            )
+            candidate.save()
+            return JsonResponse({'messge':'profile submitted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+            
+        
+        
+        
             
 
 
@@ -94,57 +125,7 @@ def login(request):
 
 
 
-# Faltu code
-
-
-
-  # Adjust the import as per your project structure
-
-# def login(request):
-#     if request.method == 'POST':
-#         data = request.POST  # Assuming email and password are sent in form data
-#         email = data.get('email')
-#         password = data.get('password')
-#         if email and password:
-#             user = User.objects.filter(email=email).first()
-#             if user and check_password(password, user.password):
-#                 # Generate JWT token
-#                 token = jwt.encode({
-#                     'user_id': user.id,
-#                     'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
-#                 }, settings.SECRET_KEY, algorithm='HS256')
-
-#                 return JsonResponse({
-#                     'user_id': user.id,
-#                     'access_token': token.decode('utf-8'),
-#                 }, status=200)
-#             else:
-#                 return JsonResponse({'error': 'Invalid credentials'}, status=400)
-#         else:
-#             return JsonResponse({'error': 'Email and password are required'}, status=400)
-#     else:
-#         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
     
-    # @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def user_logout(request):
-#     try:
-#         # Log out the user
-#         logout(request)
-
-#         # Delete refresh token
-#         refresh_token = request.COOKIES.get('refresh_token')
-#         if refresh_token:
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()
-
-#         # Optionally, you can perform additional actions like updating user status
-        
-#         return Response({'success': 'Successfully logged out'}, status=200)
-#     except Exception as e:
-#         return Response({'error': 'An error occurred during logout'}, status=500)
 
 # @csrf_exempt
 # # @api_view(['POST'])
@@ -163,17 +144,3 @@ def login(request):
 #                 return JsonResponse({'message':str(err)})
 #         else:
 #             return JsonResponse({'error': 'Invalid request method.'})
-
-# @csrf_exempt
-# def get_empID(request):
-#     if request.method == "GET":
-#         last_employee_id_object = EmpID.objects.last()
-#         if last_employee_id_object:
-#             last_employee_id = last_employee_id_object.employeeID
-#         else:
-#             last_employee_id = 1000
-
-#         new_employee_id = last_employee_id + 1
-#         employeeID = EmpID.objects.create(employeeID=new_employee_id)
-#         employeeID.save()
-#         return JsonResponse({'employeeID': new_employee_id})
