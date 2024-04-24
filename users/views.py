@@ -15,6 +15,10 @@ from django.contrib.auth import authenticate
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 
 
 from .models import User
@@ -173,3 +177,24 @@ def login(request):
 #         employeeID = EmpID.objects.create(employeeID=new_employee_id)
 #         employeeID.save()
 #         return JsonResponse({'employeeID': new_employee_id})
+
+@csrf_exempt
+@require_POST
+def create_admin(request):
+    try:
+        admin_exists = User.objects.filter(role='admin').exists()
+        
+        if not admin_exists:
+            User.objects.create(
+                userName='admin1',
+                fullName='Admin',
+                email='admin@gmail.com',
+                role='admin',
+                mobileNumber='005657',
+                password='admin@123'
+            )
+            return JsonResponse({'Success': 'Welcome Admin'})
+        else:
+            return JsonResponse({'error': 'Admin exists already'}, status=409)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

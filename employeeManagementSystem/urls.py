@@ -12,7 +12,7 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import signup
-from users.views import login
+from users.views import login,create_admin
 # , logout,get_empID
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
@@ -37,11 +37,14 @@ from recruit.views import (
     apply_for_job,
     withdraw_job,
     fetch_notifications_by_user,
-    mark_notification_as_read
+    mark_notification_as_read,
+    filter_profile,
+    accept_reject
 )
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/admin/create_admin', create_admin, name='create_admin'),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     # path('api/user/logout', logout, name='logout'),
@@ -89,6 +92,10 @@ urlpatterns = [
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
     path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
     path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
+    path('api/employee/filter/profile', filter_profile, name='filterProfile'),
+    path('api/employee/candidate/accept_reject', accept_reject, name='accept_reject'),
+
+
 ]
 
 

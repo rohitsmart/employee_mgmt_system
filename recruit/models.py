@@ -39,7 +39,7 @@ class Questions(models.Model):
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
     candidate=models.ForeignKey(User, on_delete=models.CASCADE)
-    currrentStatus=models.CharField(max_length=100)
+    currentStatus=models.CharField(max_length=100)
     round1=models.CharField(max_length=100)
     round2=models.CharField(max_length=100)
     round3=models.CharField(max_length=100)
@@ -143,6 +143,10 @@ class Notification(models.Model):
         (2,'unread'),
         ) 
     status = models.TextField(choices=STATUSES)
+    jobId=models.IntegerField(null=True)
+    jobName=models.CharField(max_length=100, null = True)
+    currentStatus = models.CharField(max_length=30, null = True)
+
 
     def __str__(self):
         return f"Notification for {self.user}" 

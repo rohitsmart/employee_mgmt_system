@@ -11,7 +11,7 @@ from project.decorators import jwt_auth_required
 from recruit.models import Stream
 import random
 from recruit.models import Questions
-from recruit.models import Exam
+from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
 from rest_framework_simplejwt.authentication import JWTAuthentication
@@ -408,7 +408,57 @@ def delete_job(request):
         return JsonResponse({'error': 'Job not found'}, status=404)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def accept_reject(request):
+    try:
+        user_id = request.user_id
+        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
+        
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
 
+        applied_jobs = ApplyJob.objects.filter(status='Active')
+        for job in applied_jobs:
+            find_job = Job.objects.get(id=job.jobID)
+            notification = Notification.objects.create(
+                message = "Congrats!! You're eligible for the 1st round interview for the role of " + find_job.jobName,
+                date = date.today(),
+                status = 'unread',
+                jobId = find_job.id,
+                jobName = find_job.jobName,
+                currentStatus = 'Round1',
+                user = job.candidate
+            )
+            notification.save()
+            Track.objects.create(
+                candidate = job.candidate,
+                currentStatus = 'Eligible for round1',
+                round1 = 'Pending'
+            )
+
+        return JsonResponse({'message': 'Applications are accepted & sent notification to them'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+@jwt_auth_required
+def filter_profile(request):
+    try:
+        user_id = request.user_id
+        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
+        
+        if not is_emp_exists:
+            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+
+        applied_jobs = ApplyJob.objects.filter(status='Active').values()  # Convert queryset to list of dictionaries
+        
+        return JsonResponse({'applied_jobs': list(applied_jobs)})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
 
 @require_GET
 @jwt_auth_required
@@ -494,6 +544,9 @@ def fetch_notifications_by_user(request):
                 'message': notification.message,
                 'date': notification.date,
                 'status': notification.status,
+                'jobName': notification.jobName,
+                'currentStatus': notification.currentStatus,
+                'jobId': notification.jobId
             })
         return JsonResponse(notification_data, safe=False)
     except Exception as e:
