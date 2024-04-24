@@ -99,12 +99,12 @@ def create_admin(request):
         
         if not admin_exists:
             User.objects.create(
-                userName='admin1',
+                userName='admin',
                 fullName='Admin',
                 email='admin@gmail.com',
                 role='admin',
-                mobileNumber='005657',
-                password='admin@123'
+                mobileNumber='0123456789',
+                password='password'
             )
             return JsonResponse({'Success': 'Welcome Admin'})
         else:
