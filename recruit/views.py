@@ -486,19 +486,21 @@ def fetch_job_list(request):
 @jwt_auth_required
 def apply_for_job(request):
     try:
-        userId = request.user_id
+        user_id = request.user_id
         job_id = request.GET.get('jobId')
-        is_candidate_exist = User.objects.filter(id=userId, role='candidate').exists()
-        if not is_candidate_exist:
+
+        if not User.objects.filter(id=user_id, role='candidate').exists():
             return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
 
         try:
-            job = Job.objects.get(id=job_id)
+            Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             return JsonResponse({'error': 'Job does not exist'}, status=404)
 
-        candidate = User.objects.get(id=userId)
-        ApplyJob.objects.create(candidate=candidate, jobID=job_id, status='Active')
+        if ApplyJob.objects.filter(jobID=job_id, candidate=user_id).exists():
+            return JsonResponse({'error': 'You have already applied for this job'}, status=403)
+
+        ApplyJob.objects.create(candidate_id=user_id, jobID=job_id, status='Active')
 
         return JsonResponse({'message': 'Job applied successfully'})
 

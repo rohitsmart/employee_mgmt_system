@@ -1,4 +1,6 @@
 from django.db import models
+from django.db.models.signals import post_migrate
+from django.dispatch import receiver
 
 
 
@@ -24,5 +26,14 @@ class User(models.Model):
     cv_url=models.URLField()
     active = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.email
+@receiver(post_migrate)
+def create_admin(sender, **kwargs):
+    if not User.objects.filter(role='admin').exists():
+        User.objects.create(
+            userName='admin',
+            fullName='Admin',
+            email='admin@gmail.com',
+            role='admin',
+            mobileNumber='7856987456',
+            password='password'
+        )
