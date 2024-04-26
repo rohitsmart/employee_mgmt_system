@@ -1,6 +1,8 @@
+import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
+from project.decorators import jwt_auth_required
 from users.serializers import UserSerializer
 from .models import User
 from .models import EmpID
@@ -19,6 +21,10 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+import random
+import time
+from django.core.cache import cache
+from django.core.mail import send_mail
 
 
 from .models import User
@@ -130,21 +136,62 @@ def login(request):
 
 @csrf_exempt
 @require_POST
-def create_admin(request):
+@jwt_auth_required
+def update_password(request):
     try:
-        admin_exists = User.objects.filter(role='admin').exists()
-        
-        if not admin_exists:
-            User.objects.create(
-                userName='admin',
-                fullName='Admin',
-                email='admin@gmail.com',
-                role='admin',
-                mobileNumber='0123456789',
-                password='password'
-            )
-            return JsonResponse({'Success': 'Welcome Admin'})
-        else:
-            return JsonResponse({'error': 'Admin exists already'}, status=409)
+        data = json.loads(request.body)
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        user = User.objects.filter(id=request.user_id).first()
+        if not user:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+        if not check_password(current_password, user.password):
+            return JsonResponse({'error': 'Current password & old password cannot be same'}, status=400)
+        user.password = make_password(new_password)
+        user.save()
+        return JsonResponse({'message': 'Password updated successfully'})
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@csrf_exempt
+@require_POST
+def forget_password(request):
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return JsonResponse({'error': 'User with this email does not exist'}, status=404)
+
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        cache.set(email, otp, 300)
+        return JsonResponse({'otp': otp})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def update_password_with_otp(request):
+    try:
+        data = json.loads(request.body)
+        email =data.get('email')
+        otp = data.get('otp')
+        new_password = data.get('new_password')
+        user = User.objects.get(email=email)
+        print(user)
+        cached_otp = cache.get(email)
+
+        if not cached_otp or cached_otp != otp:
+            return JsonResponse({'error': 'Invalid or expired OTP'}, status=400)
+
+        user.password = new_password
+        user.save()
+        cache.delete(user.email)
+        return JsonResponse({'message': 'Password updated successfully'})
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
