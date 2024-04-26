@@ -7,6 +7,7 @@ from django.contrib.auth.hashers import make_password
 from users.serializers import UserSerializer
 from .models import User
 from .models import EmpID
+from .models import EmpModule
 from django.db.models import Max
 import json
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -172,8 +173,57 @@ def upload_cv(request):
             return JsonResponse({'error': 'An error occurred during uploading the image'}, status=500)
     
     
-# @csrf_exempt
-# @require_POST
-# def create_authmodule(request):
-#         if request.method == 'POST':
-#             try:
+@csrf_exempt
+@require_POST
+def create_empmodule(request):
+        if request.method == 'POST':
+            try:
+                data=json.loads(request.body)
+                moduleName=data.get('moduleName')
+                moduleKey=data.get('moduleKey')   #this will be the alphanumeric filed
+                empModule=EmpModule.create.objects(
+                    moduleName=moduleName,
+                    moduleKey=moduleKey
+                )
+                empModule.save()
+                return JsonResponse({'message':'module created successfully'})
+            except Exception as e:
+                return JsonResponse({'error': str(e)})
+        else:
+            return JsonResponse({'error': 'Only POST requests are allowed'})
+        
+@csrf_exempt
+@require_http_methods(['PUT'])
+def update_empModule(request):
+    if request.method=='PUT':
+        try:
+            module_id=request.get('id')
+            if module_id:
+                return JsonResponse({'message':'module not found'})
+            data=json.loads(request.body)
+            empModule=EmpModule.objects.get(id=module_id)
+            empModule.moduleName=data.get('moduleName')
+            empModule.moduleKey=data.get('moduleKey')
+            empModule.save()
+            return JsonResponse({'success':'module upated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed'})
+    
+@require_GET
+def get_empModule(request):
+    if request.method=='GET':
+        try:
+            module_id=request.GET.get('id')
+            if module_id:
+                return JsonResponse({'message':'module not found'})
+            empModule=EmpModule.objects.get(id=module_id)
+            return JsonResponse({'moduleName':empModule.moduleName,
+                                 'moduleKey':empModule.moduleKey})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})    
+            
+                    

@@ -24,7 +24,7 @@ class User(models.Model):
     cv_url=models.URLField(null=True)
     active = models.BooleanField(default=False)
 
-class empModule(models.Model):
+class EmpModule(models.Model):
     id = models.AutoField(primary_key=True)
     moduleName=models.CharField(max_length=100,null=True)
     moduleKey=models.TextField()
