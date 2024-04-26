@@ -1,3 +1,6 @@
+import os
+from django.core.files.storage import default_storage
+from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
@@ -148,3 +151,29 @@ def create_admin(request):
             return JsonResponse({'error': 'Admin exists already'}, status=409)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+def upload_cv(request):
+    if request.method == 'POST':
+        try:
+            if request.FILES.get('file'):
+                file = request.FILES['file']
+                timestamp = int(datetime.now().timestamp())
+                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                path = default_storage.save(f'public/files/{filename}', file)
+                cv_url = default_storage.url(path)
+                image = User(cv_url=cv_url)
+                image.save()
+                return JsonResponse({'success': 'Image uploaded', 'image_url': cv_url})
+            else:
+                return JsonResponse({'error': 'No file uploaded'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': 'An error occurred during uploading the image'}, status=500)
+    
+    
+# @csrf_exempt
+# @require_POST
+# def create_authmodule(request):
+#         if request.method == 'POST':
+#             try:

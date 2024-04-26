@@ -10,7 +10,7 @@ import json
 from project.decorators import jwt_auth_required
 from recruit.models import Stream
 import random
-from recruit.models import Questions
+from recruit.models import Questions, Scheduler
 from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
@@ -530,15 +530,6 @@ def fetch_stream_with_questions(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-
-
-
-
-
-
-          
-    
-    
 
 @csrf_exempt
 @require_POST

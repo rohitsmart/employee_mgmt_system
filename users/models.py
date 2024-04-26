@@ -24,16 +24,14 @@ class User(models.Model):
     cv_url=models.URLField(null=True)
     active = models.BooleanField(default=False)
 
-    def __str__(self):
-        return self.email
+class empModule(models.Model):
+    id = models.AutoField(primary_key=True)
+    moduleName=models.CharField(max_length=100,null=True)
+    moduleKey=models.TextField()
     
     
-    @staticmethod
-    def create_admin(fullName,role,mobileNumber, email, password):
-        user = User.objects.create_user(fullName=fullName,role=role,mobileNumber=mobileNumber, email=email, password=password)
-        user.is_staff = True
-        user.is_superuser = True
-        user.save()
-        return user
+    
+    
+
     
     
