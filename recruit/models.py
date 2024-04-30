@@ -35,11 +35,12 @@ class Questions(models.Model):
     )
     level = models.IntegerField(choices=LEVEL_CHOICES,null=True)
     stream =models.ForeignKey(Stream, on_delete=models.CASCADE, null=True)
+    candidate = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
     candidate=models.ForeignKey(User, on_delete=models.CASCADE)
-    currrentStatus=models.CharField(max_length=100)
+    currentStatus=models.CharField(max_length=100)
     round1=models.CharField(max_length=100)
     round2=models.CharField(max_length=100)
     round3=models.CharField(max_length=100)
@@ -77,7 +78,7 @@ class Result(models.Model):
         (2, 'Round 2'),
     )
     round = models.CharField(max_length=50,choices=ROUNDS)
-    # scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
+    scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
         
 class Exam(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
@@ -92,7 +93,7 @@ class Exam(models.Model):
     )
     round = models.IntegerField(choices=ROUNDS, null=True)
     status = models.CharField(max_length=50, null=True)
-    # scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
+    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
 
 class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
@@ -143,6 +144,10 @@ class Notification(models.Model):
         (2,'unread'),
         ) 
     status = models.TextField(choices=STATUSES)
+    jobId=models.IntegerField(null=True)
+    jobName=models.CharField(max_length=100, null = True)
+    currentStatus = models.CharField(max_length=30, null = True)
+
 
     def __str__(self):
         return f"Notification for {self.user}" 

@@ -118,5 +118,27 @@ def delete_feedback(request):
        return JsonResponse({'error':'only DELETE method are allowed'})             
     
 
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def post_feedback(request):
+    try:
+        user_id = request.user_id
+        data = json.loads(request.body)
+        if not User.objects.filter(id=user_id).exists():
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
 
+        Feedback.objects.create(
+            user_id=user_id,
+            feedback_details=data.get('feedback_details'),
+            feedback_provider=data.get('feedback_provider'),
+            feedback_rating=data.get('feedback_rating'),
+            feedback_date=data.get('feedback_date'),
+            publish=data.get('publish', False)
+        )
+        return JsonResponse({'message': 'Feedback posted successfully'})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
 # Create your views here.

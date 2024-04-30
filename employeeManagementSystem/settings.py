@@ -30,7 +30,7 @@ SECRET_KEY = 'django-insecure-v)a!4uxeizj+s9bp8ma78uk8_f_y8vrteprlk3aq5tk1un4acb
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['192.168.1.20','localhost','127.0.0.1','192.168.1.22']
 
 
 # Application definition
@@ -113,6 +113,12 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware'
+]
+
+CORS_ALLOWED_ORIGINS = [
+    'http://localhost:3000',  # Add your frontend origin here
+    # Add other origins as needed
 ]
 
 ROOT_URLCONF = 'employeeManagementSystem.urls'

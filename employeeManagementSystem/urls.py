@@ -11,13 +11,12 @@
 
 from django.contrib import admin
 from django.urls import path
-from users.views import signup
-from users.views import login
+from users.views import signup,login,update_password,forget_password,update_password_with_otp
 # , logout,get_empID
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
-from feedback.views import create_feedback, update_feedback
+from feedback.views import create_feedback, update_feedback,post_feedback
 from assign.views import assign_task,unassign_task,update_assignTask,get_assignedTask
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
@@ -27,7 +26,7 @@ from recruit.views import (
     update_stream,
     get_questions,
     answer_question,
-    add_result,
+    save_result,
     delete_job,
     fetch_result,
     create_job,
@@ -37,14 +36,22 @@ from recruit.views import (
     apply_for_job,
     withdraw_job,
     fetch_notifications_by_user,
-    mark_notification_as_read
+    mark_notification_as_read,
+    filter_profile,
+    accept_reject
 )
 
+from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
+from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
+#  next_question,previous_question,
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     # path('api/user/logout', logout, name='logout'),
+    path('api/user/update_password', update_password, name='update_password'),
+    path('api/user/forget_password', forget_password, name='forget_password'),
+    path('api/user/update_password_with_otp', update_password_with_otp, name='update_password_with_otp'),
     path('api/project/createModule',create_module, name='create_module'),
     path('api/project/deleteModule', delete_module, name='delete_module'),
     path('api/project/updateModule', update_module, name='update_module'),
@@ -58,6 +65,7 @@ urlpatterns = [
     path('api/task/updateTask', update_task, name='update_task'),
     path('api/task/getTask', get_task, name='get_task'),
     path('api/task/deleteTask', delete_task, name='delete_task'),
+    path('api/feedback/post_feedback',post_feedback, name='post_feedback'),
     path('api/feedback/createFeedback',create_feedback, name='create_task'),
     path('api/feedback/updateFeedback',update_feedback, name='update_feedback'),
     path('api/assign/assignTask',assign_task, name='assign_task'),
@@ -76,9 +84,10 @@ urlpatterns = [
     path('api/leave/delete_leave',delete_leave, name='delete_leave'), 
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
-    path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-    path('api/recruit/answerQuestion',answer_question,name='answer_question'),
-    path('api/recruit/addResult',add_result,name='add_result'),
+    # path('api/recruit/next-question',next_question,name='next_question'),  
+    # path('api/recruit/previous-question',previous_question,name='previous_question'),  
+    path('api/recruit/saveAnswer',save_answer,name='save_answer'),
+    path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
     path('api/recruit/create_job', create_job, name='create_job'),
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
@@ -89,11 +98,11 @@ urlpatterns = [
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
     path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
     path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
-
-
-
+    path('api/employee/filter/profile', filter_profile, name='filterProfile'),
+    path('api/employee/candidate/accept_reject', accept_reject, name='accept_reject'),
 
 
 ]
+
 
 

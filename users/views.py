@@ -1,6 +1,8 @@
+import random
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
+from project.decorators import jwt_auth_required
 from users.serializers import UserSerializer
 from .models import User
 from .models import EmpID
@@ -15,6 +17,14 @@ from django.contrib.auth import authenticate
 import jwt
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.views.decorators.http import require_GET, require_POST
+from django.views.decorators.http import require_http_methods
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import random
+import time
+from django.core.cache import cache
+from django.core.mail import send_mail
 
 
 from .models import User
@@ -56,6 +66,43 @@ def signup(request):
             return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+@csrf_exempt
+@require_POST
+def register_candidate(request):
+    if request.method=='POST':
+        try:
+            data=json.loads(request.body)
+            # userName=data.get('userName')
+            fullName=data.get('fullName')
+            # address=data.get('address')
+            degree=data.get('degree')
+            email=data.get('email')
+            mobileNumber=data.get('mobileNumber')
+            cv_url=data.get('cv_url')
+            role='employee'
+        
+            candidate=User.objects.create(
+            # userName=userName,
+            fullName=fullName,
+            # address=address,
+            degree=degree,
+            email=email,
+            mobileNumber=mobileNumber,
+            cv_url=cv_url,
+            role=role
+            )
+            candidate.save()
+            return JsonResponse({'messge':'profile submitted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+            
+        
+        
+        
+            
 
 
 @csrf_exempt
@@ -67,7 +114,7 @@ def login(request):
         if email and password:
             user = User.objects.filter(email=email).first()
             if user:
-                if (password,user.password):
+                if (password, user.password):
                     token = jwt.encode({
                         'user_id': user.id,
                         'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
@@ -87,89 +134,64 @@ def login(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
-
-
-
-# Faltu code
-
-
-
-  # Adjust the import as per your project structure
-
-# def login(request):
-#     if request.method == 'POST':
-#         data = request.POST  # Assuming email and password are sent in form data
-#         email = data.get('email')
-#         password = data.get('password')
-#         if email and password:
-#             user = User.objects.filter(email=email).first()
-#             if user and check_password(password, user.password):
-#                 # Generate JWT token
-#                 token = jwt.encode({
-#                     'user_id': user.id,
-#                     'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
-#                 }, settings.SECRET_KEY, algorithm='HS256')
-
-#                 return JsonResponse({
-#                     'user_id': user.id,
-#                     'access_token': token.decode('utf-8'),
-#                 }, status=200)
-#             else:
-#                 return JsonResponse({'error': 'Invalid credentials'}, status=400)
-#         else:
-#             return JsonResponse({'error': 'Email and password are required'}, status=400)
-#     else:
-#         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def update_password(request):
+    try:
+        data = json.loads(request.body)
+        current_password = data.get('current_password')
+        new_password = data.get('new_password')
+        user = User.objects.filter(id=request.user_id).first()
+        if not user:
+            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+        if not check_password(current_password, user.password):
+            return JsonResponse({'error': 'Current password & old password cannot be same'}, status=400)
+        user.password = make_password(new_password)
+        user.save()
+        return JsonResponse({'message': 'Password updated successfully'})
     
-    # @api_view(['POST'])
-# @permission_classes([IsAuthenticated])
-# @authentication_classes([JWTAuthentication])
-# def user_logout(request):
-#     try:
-#         # Log out the user
-#         logout(request)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
-#         # Delete refresh token
-#         refresh_token = request.COOKIES.get('refresh_token')
-#         if refresh_token:
-#             token = RefreshToken(refresh_token)
-#             token.blacklist()
 
-#         # Optionally, you can perform additional actions like updating user status
-        
-#         return Response({'success': 'Successfully logged out'}, status=200)
-#     except Exception as e:
-#         return Response({'error': 'An error occurred during logout'}, status=500)
 
-# @csrf_exempt
-# # @api_view(['POST'])
-# # @permission_classes([IsAuthenticated])
-# # @authentication_classes([JWTAuthentication])
-# def user_logout(request):
-#         if request.method == 'POST':
-#             # Access the refresh token from request headers or cookies
-#             try:
-#                 refresh_token = request.data["refresh"]
-#                 #refresh_token = request.META.get('HTTP_AUTHORIZATION', '').split()[1]
-#                 token = RefreshToken(refresh_token)
-#                 token.blacklist()
-#                 return JsonResponse({'message':'User logout successfully'})
-#             except Exception as err:
-#                 return JsonResponse({'message':str(err)})
-#         else:
-#             return JsonResponse({'error': 'Invalid request method.'})
+@csrf_exempt
+@require_POST
+def forget_password(request):
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        user = User.objects.filter(email=email).first()
+        if not user:
+            return JsonResponse({'error': 'User with this email does not exist'}, status=404)
 
-# @csrf_exempt
-# def get_empID(request):
-#     if request.method == "GET":
-#         last_employee_id_object = EmpID.objects.last()
-#         if last_employee_id_object:
-#             last_employee_id = last_employee_id_object.employeeID
-#         else:
-#             last_employee_id = 1000
+        otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
+        cache.set(email, otp, 300)
+        return JsonResponse({'otp': otp})
 
-#         new_employee_id = last_employee_id + 1
-#         employeeID = EmpID.objects.create(employeeID=new_employee_id)
-#         employeeID.save()
-#         return JsonResponse({'employeeID': new_employee_id})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+@csrf_exempt
+@require_POST
+def update_password_with_otp(request):
+    try:
+        data = json.loads(request.body)
+        email =data.get('email')
+        otp = data.get('otp')
+        new_password = data.get('new_password')
+        user = User.objects.get(email=email)
+        print(user)
+        cached_otp = cache.get(email)
+
+        if not cached_otp or cached_otp != otp:
+            return JsonResponse({'error': 'Invalid or expired OTP'}, status=400)
+
+        user.password = new_password
+        user.save()
+        cache.delete(user.email)
+        return JsonResponse({'message': 'Password updated successfully'})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
