@@ -10,4 +10,6 @@ class Project(models.Model):
     end_date = models.DateField()
     status=models.CharField(max_length=30)
 
+class Token(models.Model):
+    token = models.CharField(max_length=255, unique=True)
 # Create your models here.

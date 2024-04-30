@@ -11,7 +11,7 @@
 
 from django.contrib import admin
 from django.urls import path
-from users.views import signup,login,update_password,forget_password,update_password_with_otp
+from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout
 # , logout,get_empID
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
@@ -45,6 +45,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
+    path('api/user/logout', logout, name='logout'),
     # path('api/user/logout', logout, name='logout'),
     path('api/user/update_password', update_password, name='update_password'),
     path('api/user/forget_password', forget_password, name='forget_password'),

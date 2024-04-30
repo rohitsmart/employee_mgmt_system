@@ -25,7 +25,7 @@ import random
 import time
 from django.core.cache import cache
 from django.core.mail import send_mail
-
+from project.models import Token
 
 from .models import User
 
@@ -82,7 +82,9 @@ def login(request):
                         'user_id': user.id,
                         'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
                     }, 'kkfwnfnfnjfknerkbeg', algorithm='HS256')
-
+                    Token.objects.create(
+                       token = token 
+                    )
                     return JsonResponse({
                         'user_id': user.id,
                         'access_token': token,
@@ -96,6 +98,22 @@ def login(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def logout(request):
+    try:
+        token = request.META.get('HTTP_AUTHORIZATION').split()[1]
+        
+        if Token.objects.filter(token=token).exists():
+            Token.objects.filter(token=token).delete()
+            return JsonResponse({'message': 'Successfully logged out'}, status=200)
+        else:
+            return JsonResponse({'error': 'Token does not exist'}, status=400)
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 @csrf_exempt
 @require_POST
