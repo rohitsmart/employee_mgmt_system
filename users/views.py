@@ -5,8 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 from project.decorators import jwt_auth_required
-from .models import User
-from .models import EmpID
+from .models import EmpID,User
 from .models import EmpModule
 from django.db.models import Max
 import json
@@ -22,18 +21,16 @@ from django.views.decorators.csrf import csrf_exempt
 import random
 from django.core.cache import cache
 from project.models import Token
-from .models import User
 
 @csrf_exempt
 def signup(request):
     if request.method == 'POST':
         data = json.loads(request.body)
+
         if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
             email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
             last_emp_id = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))['max_emp_id'] or 999 #1000
             emp_id = last_emp_id + 1 #1001
-            print(emp_id)
-            print(last_emp_id)
             password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
 
             try:                
@@ -98,7 +95,7 @@ def login(request):
                 if (password, user.password):
                     token = jwt.encode({
                         'user_id': user.id,
-                        'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time
+                        'exp': datetime.utcnow() + timedelta(hours=1)
                     }, 'kkfwnfnfnjfknerkbeg', algorithm='HS256')
                     Token.objects.create(
                        token = token 
@@ -123,15 +120,14 @@ def login(request):
 def logout(request):
     try:
         token = request.META.get('HTTP_AUTHORIZATION').split()[1]
-        
         if Token.objects.filter(token=token).exists():
             Token.objects.filter(token=token).delete()
             return JsonResponse({'message': 'Successfully logged out'}, status=200)
         else:
-            return JsonResponse({'error': 'Token does not exist'}, status=400)
-        
+            return JsonResponse({'error': 'Token does not exist'}, status=400)  
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @require_POST
@@ -142,12 +138,19 @@ def update_password(request):
         current_password = data.get('current_password')
         new_password = data.get('new_password')
         user = User.objects.filter(id=request.user_id).first()
+        
         if not user:
             return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+        
         if not check_password(current_password, user.password):
-            return JsonResponse({'error': 'Current password & old password cannot be same'}, status=400)
+            return JsonResponse({'error': "Current password didn't match"}, status=400)
+        
+        if current_password == new_password:
+            return JsonResponse({'error': "Current password & new password couldn't be same"}, status=400)
+        
         user.password = make_password(new_password)
         user.save()
+        
         return JsonResponse({'message': 'Password updated successfully'})
     
     except Exception as e:
