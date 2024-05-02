@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
                 ('type', models.CharField(choices=[('mcq', 'Multiple Choice Question'), ('subjective', 'Subjective Question')], max_length=50,null=True)),
                 ('level', models.IntegerField(choices=[(1, 'Level 1'), (2, 'Level 2'), (3, 'Level 3')],null=True)),
                 ('stream', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='recruit.stream',null=True)),
-                # ('candidate', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user',null=True))
+                ('candidate', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='users.user',null=True))
             ],
         ),
     ]

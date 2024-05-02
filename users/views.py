@@ -1,4 +1,6 @@
-import random
+import os
+from django.core.files.storage import default_storage
+from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
@@ -6,6 +8,7 @@ from project.decorators import jwt_auth_required
 from users.serializers import UserSerializer
 from .models import User
 from .models import EmpID
+from .models import EmpModule
 from django.db.models import Max
 import json
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -213,3 +216,78 @@ def update_password_with_otp(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+def upload_cv(request):
+    if request.method == 'POST':
+        try:
+            if request.FILES.get('file'):
+                file = request.FILES['file']
+                timestamp = int(datetime.now().timestamp())
+                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                path = default_storage.save(f'public/files/{filename}', file)
+                cv_url = default_storage.url(path)
+                image = User(cv_url=cv_url)
+                image.save()
+                return JsonResponse({'success': 'Image uploaded', 'image_url': cv_url})
+            else:
+                return JsonResponse({'error': 'No file uploaded'}, status=400)
+        except Exception as e:
+            return JsonResponse({'error': 'An error occurred during uploading the image'}, status=500)
+    
+    
+@csrf_exempt
+@require_POST
+def create_empmodule(request):
+        if request.method == 'POST':
+            try:
+                data=json.loads(request.body)
+                moduleName=data.get('moduleName')
+                moduleKey=data.get('moduleKey')   #this will be the alphanumeric filed
+                empModule=EmpModule.create.objects(
+                    moduleName=moduleName,
+                    moduleKey=moduleKey
+                )
+                empModule.save()
+                return JsonResponse({'message':'module created successfully'})
+            except Exception as e:
+                return JsonResponse({'error': str(e)})
+        else:
+            return JsonResponse({'error': 'Only POST requests are allowed'})
+        
+@csrf_exempt
+@require_http_methods(['PUT'])
+def update_empModule(request):
+    if request.method=='PUT':
+        try:
+            module_id=request.get('id')
+            if module_id:
+                return JsonResponse({'message':'module not found'})
+            data=json.loads(request.body)
+            empModule=EmpModule.objects.get(id=module_id)
+            empModule.moduleName=data.get('moduleName')
+            empModule.moduleKey=data.get('moduleKey')
+            empModule.save()
+            return JsonResponse({'success':'module upated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed'})
+    
+@require_GET
+def get_empModule(request):
+    if request.method=='GET':
+        try:
+            module_id=request.GET.get('id')
+            if module_id:
+                return JsonResponse({'message':'module not found'})
+            empModule=EmpModule.objects.get(id=module_id)
+            return JsonResponse({'moduleName':empModule.moduleName,
+                                 'moduleKey':empModule.moduleKey})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})    
+            
+                    

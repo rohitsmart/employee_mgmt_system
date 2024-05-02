@@ -11,8 +11,9 @@
 
 from django.contrib import admin
 from django.urls import path
+from users.views import signup
+from users.views import login,create_admin,upload_cv
 from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout
-# , logout,get_empID
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
@@ -24,15 +25,11 @@ from leave.views import apply_leave, update_leave, get_leave, delete_leave
 from recruit.views import (
     create_stream,
     update_stream,
-    get_questions,
-    answer_question,
-    save_result,
     delete_job,
     fetch_result,
     create_job,
     fetch_job,
     edit_job,
-    fetch_job_list,
     apply_for_job,
     withdraw_job,
     fetch_notifications_by_user,
@@ -44,13 +41,11 @@ from recruit.views import (
 
 from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
 from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
-#  next_question,previous_question,
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     path('api/user/logout', logout, name='logout'),
-    # path('api/user/logout', logout, name='logout'),
     path('api/user/update_password', update_password, name='update_password'),
     path('api/user/forget_password', forget_password, name='forget_password'),
     path('api/user/update_password_with_otp', update_password_with_otp, name='update_password_with_otp'),
@@ -58,7 +53,6 @@ urlpatterns = [
     path('api/project/deleteModule', delete_module, name='delete_module'),
     path('api/project/updateModule', update_module, name='update_module'),
     path('api/project/getModule', get_module ,name='get_module'),
-    # path('api/user/getEmpId', get_empID, name='get_empID'),
     path('api/project/createProject',create_project, name='create_project'),
     path('api/project/getProjectById', get_project, name='get_project'),
     path('api/project/updateProject', update_project, name='update_project'),
@@ -98,13 +92,25 @@ urlpatterns = [
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
     path('api/recruit/edit-job', edit_job, name='edit_job'),
     path('api/recruit/delete-job', delete_job, name='delete_job'),
-    path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
+    # path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
     path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
     path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
     path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
     path('api/employee/filter/profile', filter_profile, name='filterProfile'),
     path('api/employee/candidate/accept_reject', accept_reject, name='accept_reject'),
+    path('api/recruit/candidate/update-candidate-scheduler', update_candidate_scheduler, name='update_candidate_scheduler'),
+    path('api/recruit/candidate/fetch-my-scheduler', fetch_my_scheduler, name='fetch_my_scheduler'),
+    path('api/recruit/candidate/track',track, name='track'),
+    path('api/recruit/candidate/get-questions',get_questions, name='get_questions'),
+    path('api/recruit/candidate/fetch-stream-with-questions',fetch_stream_with_questions, name='fetch_stream_with_questions'),
+    path('api/recruit/candidate/fetch-stream',fetch_stream, name='fetch_stream'),
+    path('api/recruit/candidate/candidate-scheduler',candidate_scheduler, name='candidate_scheduler'),
+    path('api/recruit/candidate/save-answer',save_answer, name='save_answer'),
+    path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
+    path('api/users/upload-image',upload_cv, name='upload_cv'),
+    
+    
 
 
 ]
