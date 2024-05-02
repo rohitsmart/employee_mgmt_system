@@ -1,7 +1,6 @@
 from datetime import date, datetime, timezone
 import os
 from django.conf import settings
-from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
@@ -14,7 +13,8 @@ from recruit.models import Questions, Scheduler
 from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.serializers import serialize
+
 
 @csrf_exempt
 @require_POST
@@ -170,6 +170,7 @@ def save_answer(request):           #in this we are savig the answer by the cand
 
 @require_POST
 @csrf_exempt
+
 def submit_exam(request):               #candidate will get only 5 questions according to that result will bw calculated
     if request.method=='POST':
         try:
@@ -536,19 +537,21 @@ def fetch_stream_with_questions(request):
 @jwt_auth_required
 def apply_for_job(request):
     try:
-        userId = request.user_id
+        user_id = request.user_id
         job_id = request.GET.get('jobId')
-        is_candidate_exist = User.objects.filter(id=userId, role='candidate').exists()
-        if not is_candidate_exist:
+
+        if not User.objects.filter(id=user_id, role='candidate').exists():
             return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
 
         try:
-            job = Job.objects.get(id=job_id)
+            Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             return JsonResponse({'error': 'Job does not exist'}, status=404)
 
-        candidate = User.objects.get(id=userId)
-        ApplyJob.objects.create(candidate=candidate, jobID=job_id, status='Active')
+        if ApplyJob.objects.filter(jobID=job_id, candidate=user_id).exists():
+            return JsonResponse({'error': 'You have already applied for this job'}, status=403)
+
+        ApplyJob.objects.create(candidate_id=user_id, jobID=job_id, status='Active')
 
         return JsonResponse({'message': 'Job applied successfully'})
 
@@ -621,5 +624,54 @@ def mark_notification_as_read(request):
             return JsonResponse({'message': 'Notification marked as read'})
         else:
             return JsonResponse({'error': 'No unread notification found for this user'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+    
+@require_GET
+@jwt_auth_required
+def exam_result(request):
+    try:
+        candidate_id = request.user_id 
+        results = Result.objects.filter(candidate_id=candidate_id)
+
+        serialized_results = []
+        for result in results:
+            serialized_result = {
+                "exam": result.get_round_display(),
+                "totalValue": result.maximum,
+                "status": result.status,
+                "totalQuestions" : 5, 
+                "details": []
+            }
+
+            # Load questions from JSON file
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+                json_question = json.load(file)
+
+            # Fetch exam results
+            results = Exam.objects.filter(candidate_id=candidate_id)
+            result_declared = []
+            for result_item in results:
+                question_id = result_item.question_id
+                question_data = next((question for question in json_question if question['id'] == question_id), None)
+                result_declared.append({
+                    'question_id': result_item.question_id,
+                    'question': question_data['question'],
+                    'candidateResponse': result_item.candidateResponse,
+                    'correctResponse': result_item.correctResponse,
+                    'status': result_item.status
+                })
+
+            serialized_result["details"] = result_declared
+            serialized_results.append(serialized_result)
+
+        response_data = {
+            "Results": serialized_results
+        }
+
+        return JsonResponse(response_data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
