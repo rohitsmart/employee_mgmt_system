@@ -38,7 +38,8 @@ from recruit.views import (
     fetch_notifications_by_user,
     mark_notification_as_read,
     filter_profile,
-    accept_reject
+    accept_reject,
+    exam_result
 )
 
 from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
@@ -85,8 +86,11 @@ urlpatterns = [
     path('api/leave/delete_leave',delete_leave, name='delete_leave'), 
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
-    # path('api/recruit/next-question',next_question,name='next_question'),  
-    # path('api/recruit/previous-question',previous_question,name='previous_question'),  
+    path('api/recruit/getQuestions',get_questions,name='get_questions'),    
+    path('api/recruit/answerQuestion',answer_question,name='answer_question'),
+    path('api/recruit/saveResult',save_result,name='save_result'),
+    path('api/recruit/exam_result',exam_result,name='exam_result'),
+ 
     path('api/recruit/saveAnswer',save_answer,name='save_answer'),
     path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),

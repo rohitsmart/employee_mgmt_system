@@ -13,7 +13,8 @@ class EmpID(models.Model):
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
-    emp_id = models.OneToOneField(EmpID, on_delete=models.CASCADE,null=True)
+    emp = models.OneToOneField(EmpID, null=True, on_delete=models.CASCADE)
+
     userName = models.CharField(max_length=100, null = True)
     fullName = models.CharField(max_length=100, null=True)
     address=models.TextField(null=True)
@@ -26,21 +27,7 @@ class User(models.Model):
     cv_url=models.URLField(null=True)
     active = models.BooleanField(default=False)
 
-<<<<<<< HEAD
-    def __str__(self):
-        return self.email
-    
-    
-    @staticmethod
-    def create_admin(fullName,role,mobileNumber, email, password):
-        user = User.objects.create_user(fullName=fullName,role=role,mobileNumber=mobileNumber, email=email, password=password)
-        user.is_staff = True
-        user.is_superuser = True
-        user.save()
-        return user
-    
-    
-=======
+
 @receiver(post_migrate)
 def create_admin(sender, **kwargs):
     if not User.objects.filter(role='admin').exists():
@@ -52,4 +39,3 @@ def create_admin(sender, **kwargs):
             mobileNumber='7856987456',
             password='password'
         )
->>>>>>> feature/admin
