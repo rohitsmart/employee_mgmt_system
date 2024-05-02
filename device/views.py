@@ -10,14 +10,17 @@ from project.models import Project
 from module.models import Module
 from task.models import Task
 from device.models import Device
-from .decorators import jwt_auth_required
+from .decorators import jwt_auth_required,role_required
+
 @csrf_exempt
 @require_POST
 @jwt_auth_required
+@role_required('employee')
 def add_device(request):      #here we assign the task by task id
     if request.method == 'POST':
         try:
             user = request.user_id
+            print(user)
             if not user:
                 return JsonResponse({'error': 'User not found'})
         
@@ -40,6 +43,7 @@ def add_device(request):      #here we assign the task by task id
         except Exception as e:
             return JsonResponse({'error': str(e)})
     return JsonResponse({'error': 'Only POST requests are allowed'})
+
 @csrf_exempt
 @require_http_methods(['DELETE'])
 @jwt_auth_required

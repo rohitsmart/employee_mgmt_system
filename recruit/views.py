@@ -1,7 +1,6 @@
 from datetime import date, datetime, timezone
 import os
 from django.conf import settings
-from django.shortcuts import render
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
@@ -14,7 +13,8 @@ from recruit.models import Questions
 from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
-from rest_framework_simplejwt.authentication import JWTAuthentication
+from django.core.serializers import serialize
+
 
 
 @csrf_exempt
@@ -107,7 +107,6 @@ def answer_question(request):
                 question_id = data.get('id')
                 candidateResponse = data.get('candidateResponse') 
                 Date = data.get('Date')
-                                           
                 question = next((question for question in json_question if question.get('id') == question_id))
                 if question:
                     correctAnswer = question.get('correctAnswer')
@@ -142,7 +141,7 @@ def answer_question(request):
 
 @require_POST
 @csrf_exempt
-def save_result(request):               #candidate will get only 5 questions according to that result will bw calculated
+def save_result(request):      #candidate will get only 5 questions according to that result will bw calculated
     if request.method=='POST':
         try:
             data = json.loads(request.body)
@@ -573,5 +572,54 @@ def mark_notification_as_read(request):
             return JsonResponse({'message': 'Notification marked as read'})
         else:
             return JsonResponse({'error': 'No unread notification found for this user'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+    
+
+    
+@require_GET
+@jwt_auth_required
+def exam_result(request):
+    try:
+        candidate_id = request.user_id 
+        results = Result.objects.filter(candidate_id=candidate_id)
+
+        serialized_results = []
+        for result in results:
+            serialized_result = {
+                "exam": result.get_round_display(),
+                "totalValue": result.maximum,
+                "status": result.status,
+                "totalQuestions" : 5, 
+                "details": []
+            }
+
+            # Load questions from JSON file
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+                json_question = json.load(file)
+
+            # Fetch exam results
+            results = Exam.objects.filter(candidate_id=candidate_id)
+            result_declared = []
+            for result_item in results:
+                question_id = result_item.question_id
+                question_data = next((question for question in json_question if question['id'] == question_id), None)
+                result_declared.append({
+                    'question_id': result_item.question_id,
+                    'question': question_data['question'],
+                    'candidateResponse': result_item.candidateResponse,
+                    'correctResponse': result_item.correctResponse,
+                    'status': result_item.status
+                })
+
+            serialized_result["details"] = result_declared
+            serialized_results.append(serialized_result)
+
+        response_data = {
+            "Results": serialized_results
+        }
+
+        return JsonResponse(response_data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)

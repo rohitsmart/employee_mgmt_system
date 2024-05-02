@@ -77,7 +77,8 @@ class Result(models.Model):
         (2, 'Round 2'),
     )
     round = models.CharField(max_length=50,choices=ROUNDS)
-    scheduler=models.ForeignKey(Scheduler, on_delete=models.CASCADE)
+    scheduler=models.ForeignKey(Scheduler,null=True, on_delete=models.CASCADE)
+    question = models.IntegerField(null=True)
         
 class Exam(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)

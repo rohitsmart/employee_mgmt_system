@@ -13,7 +13,7 @@ class EmpID(models.Model):
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)
-    emp_id = models.OneToOneField(EmpID, on_delete=models.CASCADE)
+    emp = models.OneToOneField(EmpID, null=True, on_delete=models.CASCADE)
     userName = models.CharField(max_length=100, null = True)
     fullName = models.CharField(max_length=100, null=True)
     address=models.TextField()

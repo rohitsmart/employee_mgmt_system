@@ -38,7 +38,8 @@ from recruit.views import (
     fetch_notifications_by_user,
     mark_notification_as_read,
     filter_profile,
-    accept_reject
+    accept_reject,
+    exam_result
 )
 
 urlpatterns = [
@@ -85,6 +86,7 @@ urlpatterns = [
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
     path('api/recruit/answerQuestion',answer_question,name='answer_question'),
     path('api/recruit/saveResult',save_result,name='save_result'),
+    path('api/recruit/exam_result',exam_result,name='exam_result'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
     path('api/recruit/create_job', create_job, name='create_job'),
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
