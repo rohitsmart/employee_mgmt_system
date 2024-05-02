@@ -66,6 +66,43 @@ def signup(request):
             return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+@csrf_exempt
+@require_POST
+def register_candidate(request):
+    if request.method=='POST':
+        try:
+            data=json.loads(request.body)
+            # userName=data.get('userName')
+            fullName=data.get('fullName')
+            # address=data.get('address')
+            degree=data.get('degree')
+            email=data.get('email')
+            mobileNumber=data.get('mobileNumber')
+            cv_url=data.get('cv_url')
+            role='employee'
+        
+            candidate=User.objects.create(
+            # userName=userName,
+            fullName=fullName,
+            # address=address,
+            degree=degree,
+            email=email,
+            mobileNumber=mobileNumber,
+            cv_url=cv_url,
+            role=role
+            )
+            candidate.save()
+            return JsonResponse({'messge':'profile submitted successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+            
+        
+        
+        
+            
 
 
 @csrf_exempt
@@ -77,7 +114,7 @@ def login(request):
         if email and password:
             user = User.objects.filter(email=email).first()
             if user:
-                if (password,user.password):
+                if (password, user.password):
                     token = jwt.encode({
                         'user_id': user.id,
                         'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiry time

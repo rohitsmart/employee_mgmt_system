@@ -16,7 +16,6 @@ from users.models import User
 from django.core.serializers import serialize
 
 
-
 @csrf_exempt
 @require_POST
 # @jwt_auth_required
@@ -57,46 +56,73 @@ def update_stream(request):
             return JsonResponse({'error': 'stream not found'})
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'})
-
+    
+@require_GET
+def fetch_stream(request):
+    if request.method == 'GET':
+        try:
+            streams=Stream.objects.all()
+            if not streams:
+                return JsonResponse({'message': 'device not found'})
+            stream_name = []
+            for stream in streams:
+                stream_name.append({
+                    'streamName': stream.streamName,
+                })
+                return JsonResponse({'streams': stream_name})
+        except Stream.DoesNotExist:
+            return JsonResponse({'error':'stream not found'})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})
 
 @require_GET
-def get_questions(request):
-    if request.method=='GET':
+def get_questions(request):         #this api will get the random question and save the record on the database 
+    if request.method == 'GET':
         try:
+            candidate_id = request.GET.get('id')
+            if not candidate_id:
+                return JsonResponse({"error": "Candidate ID is required"})
+
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
-              questions_data = json.load(file)
-              stream_id = request.GET.get('id') 
+                questions_data = json.load(file)
+            stream_id = request.GET.get('id') 
             total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
             if len(total_questions) < 5:
-              return JsonResponse({"message": "questions are less than requirement"})
-    
+                return JsonResponse({"message": "Questions are less than requirement"})
             questions = random.sample(total_questions, 5)
             all_questions = []
             for question in questions:
                 all_question = {
                     "id": question["id"],
-                   "question": question["question"],
-                   "option1": question["option1"],
-                   "option2": question["option2"],
-                   "option3": question["option3"],
-                   "option4": question["option4"],
-                   "type": question["type"],
-                   "level": question["level"],
-                   "stream_id": question["stream_id"]
-                   }
+                    "question": question["question"],
+                    "option1": question["option1"],
+                    "option2": question["option2"],
+                    "option3": question["option3"],
+                    "option4": question["option4"],
+                    "type": question["type"],
+                    "level": question["level"],
+                    "stream_id": question["stream_id"]
+                }
                 all_questions.append(all_question)
-                return JsonResponse({"questions": all_questions})
+
+            # Save questions attempted by the candidate
+            for question in questions:
+                Questions.objects.create(
+                    candidate_id=candidate_id,
+                    question_id=question["id"],
+                    correctResponse=question["correctAnswer"]
+                )
+
+            return JsonResponse({"questions": all_questions})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
-
-
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
 
 @require_POST
 @csrf_exempt
-def answer_question(request):
+def save_answer(request):           #in this we are savig the answer by the candidate
     if request.method == 'POST':
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
@@ -107,6 +133,8 @@ def answer_question(request):
                 question_id = data.get('id')
                 candidateResponse = data.get('candidateResponse') 
                 Date = data.get('Date')
+                scheduler_id=data.get('scheduler_id')
+                                           
                 question = next((question for question in json_question if question.get('id') == question_id))
                 if question:
                     correctAnswer = question.get('correctAnswer')
@@ -120,7 +148,8 @@ def answer_question(request):
                         question_id=question_id,
                         candidateResponse=candidateResponse,
                         correctResponse=correctAnswer,
-                        Date=Date,                      
+                        Date=Date,   
+                        scheduler_id=scheduler_id                   
                     )
                     exam.save()
                     # if candidateResponse == correctAnswer:
@@ -141,7 +170,8 @@ def answer_question(request):
 
 @require_POST
 @csrf_exempt
-def save_result(request):      #candidate will get only 5 questions according to that result will bw calculated
+
+def submit_exam(request):               #candidate will get only 5 questions according to that result will bw calculated
     if request.method=='POST':
         try:
             data = json.loads(request.body)
@@ -190,7 +220,8 @@ def save_result(request):      #candidate will get only 5 questions according to
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'}) 
-    
+  
+@csrf_exempt    
 @require_GET
 def fetch_result(request):
     if request.method=='GET':
@@ -218,7 +249,7 @@ def fetch_result(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})       
-            
+ 
 @require_POST 
 @csrf_exempt
 def candidate_scheduler(request):
@@ -241,7 +272,6 @@ def candidate_scheduler(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only post method'})
-
 
 @require_http_methods(['PUT'])             
 @csrf_exempt
@@ -266,7 +296,7 @@ def update_candidate_scheduler(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only put method allows'})
-    
+ 
 @require_GET
 @csrf_exempt
 def fetch_my_scheduler(request):
@@ -282,7 +312,7 @@ def fetch_my_scheduler(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only get method allows'})       
-        
+ 
 @require_GET
 def track(request):
     if request.method=='GET':
@@ -460,24 +490,55 @@ def filter_profile(request):
     
 
 @require_GET
-@jwt_auth_required
-def fetch_job_list(request):
-    try:
-        userId =request.user_id
-        isCandidateExit = User.objects.filter(id=userId, role='candidate').exists() 
-        if not isCandidateExit:
-            return JsonResponse({'error': 'Candidate with the given ID does not exist or is not a candidate'}, status=400)
-        
-        current_date = datetime.now().date()
-        jobs = Job.objects.filter(status="Active", expire__gte=current_date)
-        
-        data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
-                 'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
-                 'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
-        
-        return JsonResponse(data, safe=False)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+def fetch_stream_with_questions(request):
+    if request.method == 'GET':
+        try:
+            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
+            with open(json_file_path, 'r') as file:
+                questions_data = json.load(file)
+                
+            stream_id = request.GET.get('id') 
+            if not stream_id:
+                return JsonResponse({'message': 'stream not found'})
+
+            # Fetching the stream
+            stream = Stream.objects.get(id=stream_id)
+            stream_name = stream.streamName
+                
+            total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
+            all_questions = []
+            
+            for question in total_questions:
+                all_question = {
+                    "id": question["id"],
+                    "question": question["question"],
+                    "option1": question["option1"],
+                    "option2": question["option2"],
+                    "option3": question["option3"],
+                    "option4": question["option4"],
+                    "type": question["type"],
+                    "level": question["level"],
+                    "stream_id": question["stream_id"]
+                }
+                all_questions.append(all_question)
+                
+            if not all_questions:
+                return JsonResponse({'message': 'No questions found for this stream ID'})
+                
+            return JsonResponse({'streamName': stream_name, 'all_questions': all_questions})
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+
+
+
+
+
+
+          
+    
     
 
 @csrf_exempt

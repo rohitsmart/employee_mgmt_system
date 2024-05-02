@@ -42,6 +42,9 @@ from recruit.views import (
     exam_result
 )
 
+from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
+from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
+#  next_question,previous_question,
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
@@ -87,6 +90,9 @@ urlpatterns = [
     path('api/recruit/answerQuestion',answer_question,name='answer_question'),
     path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
+ 
+    path('api/recruit/saveAnswer',save_answer,name='save_answer'),
+    path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
     path('api/recruit/create_job', create_job, name='create_job'),
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
@@ -102,5 +108,6 @@ urlpatterns = [
 
 
 ]
+
 
 
