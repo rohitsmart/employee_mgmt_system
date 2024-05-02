@@ -3,7 +3,6 @@
 import jwt
 from functools import wraps
 from django.http import JsonResponse
-
 def jwt_auth_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
