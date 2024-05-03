@@ -23,6 +23,13 @@ from adminauth.views import create_user_credential,change_role,update_user,deact
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
+    path('api/admin/user/change_role', change_role, name='change_role'),
+    path('api/admin/user/update_user', update_user, name='update_user'),
+    path('api/admin/user/deactivate_user', deactivate_user, name='deactivate_user'),
+    path('api/admin/user/delete_user', delete_user, name='delete_user'),
+    path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
+    path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     path('api/user/logout', logout, name='logout'),
@@ -91,13 +98,7 @@ urlpatterns = [
     path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
     path('api/users/upload-image',upload_cv, name='upload_cv'),
     path('api/sms', sms_api, name='sms_api'),
-    path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
-    path('api/admin/user/change_role', change_role, name='change_role'),
-    path('api/admin/user/update_user', update_user, name='update_user'),
-    path('api/admin/user/deactivate_user', deactivate_user, name='deactivate_user'),
-    path('api/admin/user/delete_user', delete_user, name='delete_user'),
-    path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
-    path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
+    
 
 
 
