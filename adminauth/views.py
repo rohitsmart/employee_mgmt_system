@@ -9,6 +9,8 @@ from django.views.decorators.csrf import csrf_exempt
 from project.decorators import jwt_auth_required
 from adminauth.models import UserCredential
 from users.models import User,EmpID
+from django.contrib.auth.hashers import make_password
+
 
 
 @require_POST
@@ -121,7 +123,7 @@ def update_user(request):
             user.role = data.get('role', user.role)
             user.mobileNumber = data.get('mobileNumber', user.mobileNumber)
             user.save()
-            
+
             return JsonResponse({'message': 'User updated successfully'}, status=200)
         
         except User.DoesNotExist:
@@ -134,4 +136,71 @@ def update_user(request):
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
 
+@csrf_exempt
+def deactivate_user(request):
+    if request.method == 'PUT':
+        try:
+            user_id = request.GET.get('user_id')
+            user = User.objects.get(id=user_id)
+            user.active =True
+            user.save()
+            return JsonResponse({'message': 'User deactivated successfully'}, status=200)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
 
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+def delete_user(request):
+    if request.method == 'DELETE':
+        try:
+            user_id = request.GET.get('user_id')
+            User.objects.get(id=user_id).delete()
+            return JsonResponse({'message': 'User deleted successfully'}, status=200)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)    
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@csrf_exempt
+def reset_user_passwrod(request):
+    if request.method == 'PUT':
+        try:
+            user_id = request.GET.get('user_id')
+            user = User.objects.get(id=user_id)
+            new_password = 'password'
+            user.password = make_password(new_password)
+            user.save()
+            return JsonResponse({'message': 'Password reset successfully', 'user_id': user_id, 'password': new_password}, status=200)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+    
+
+@csrf_exempt
+def fetch_user(request):
+    try:
+        role = request.GET.get('role')
+        
+        if role == 'candidate':
+            users = User.objects.filter(role='candidate').exclude(role='admin').values()
+        elif role == 'employee':
+            users = User.objects.filter(role='employee').exclude(role='admin').values()
+        elif role == 'all':
+            users = User.objects.exclude(role='admin').values()
+        else:
+            return JsonResponse({'error': 'Invalid role'}, status=400)
+
+        return JsonResponse({'users': list(users)}, status=200)
+    
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)

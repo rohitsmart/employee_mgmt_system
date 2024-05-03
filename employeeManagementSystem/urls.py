@@ -19,7 +19,7 @@ from recruit.views import (create_stream, update_stream, delete_job, fetch_resul
                            fetch_stream_with_questions, fetch_stream,
                            candidate_scheduler, save_answer)
 
-from adminauth.views import create_user_credential,change_role,update_user
+from adminauth.views import create_user_credential,change_role,update_user,deactivate_user,delete_user,fetch_user,reset_user_passwrod
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -94,6 +94,14 @@ urlpatterns = [
     path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
     path('api/admin/user/change_role', change_role, name='change_role'),
     path('api/admin/user/update_user', update_user, name='update_user'),
+    path('api/admin/user/deactivate_user', deactivate_user, name='deactivate_user'),
+    path('api/admin/user/delete_user', delete_user, name='delete_user'),
+    path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
+    path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
+
+
+
+
 
   
 
