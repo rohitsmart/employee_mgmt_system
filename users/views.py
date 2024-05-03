@@ -19,6 +19,8 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import random
 from django.core.cache import cache
+import uuid
+
 
 @csrf_exempt
 def signup(request):
@@ -27,14 +29,16 @@ def signup(request):
 
         if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
             email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
-            last_emp_id = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))['max_emp_id'] or 999 #1000
-            emp_id = last_emp_id + 1 #1001
+            last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
+            last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
+            emp_id = last_emp_id + 1
+
             password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
 
-            try:                
+            try:
                 emp_id_record = EmpID.objects.create(emp_id=emp_id)
                 User.objects.create(
-                    emp_id=emp_id_record,
+                    emp=emp_id_record,
                     firstName=data['firstName'],
                     lastName=data['lastName'],
                     email=email,
@@ -160,10 +164,9 @@ def forget_password(request):
     try:
         data = json.loads(request.body)
         email = data.get('email')
-        user = User.objects.filter(email=email).first()
-        if not user:
-            return JsonResponse({'error': 'User with this email does not exist'}, status=404)
-
+        if not User.objects.filter(email=email).exists():
+          return JsonResponse({'error': 'User with this email does not exist'}, status=404)
+        
         otp = ''.join([str(random.randint(0, 9)) for _ in range(6)])
         cache.set(email, otp, 300)
         return JsonResponse({'otp': otp})
@@ -180,13 +183,12 @@ def update_password_with_otp(request):
         otp = data.get('otp')
         new_password = data.get('new_password')
         user = User.objects.get(email=email)
-        print(user)
         cached_otp = cache.get(email)
 
         if not cached_otp or cached_otp != otp:
             return JsonResponse({'error': 'Invalid or expired OTP'}, status=400)
 
-        user.password = new_password
+        user.password = make_password(new_password)
         user.save()
         cache.delete(user.email)
         return JsonResponse({'message': 'Password updated successfully'})
@@ -267,4 +269,28 @@ def get_empModule(request):
     else:
         return JsonResponse({'error': 'Only GET requests are allowed'})    
             
-                    
+
+def sms_api(request):
+    try:
+        key = request.GET.get('key')
+        to = request.GET.get('to')
+        from_number = request.GET.get('from')
+        body = request.GET.get('body')
+        template_id = request.GET.get('templateid')
+        entity_id = request.GET.get('entityid')
+
+        if key != 'JzSSxVmq':
+            raise ValueError("Invalid API key")
+
+        messageid = str(uuid.uuid4())
+
+
+        response_data = {
+            "status": 100,
+            "description": "Message submitted with tracking id (UID)",
+            "messageid": messageid
+        }
+        return JsonResponse(response_data)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)                 

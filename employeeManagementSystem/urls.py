@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import signup,register_candidate,login,upload_cv
-from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout
+from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
@@ -10,25 +10,17 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import (
-    create_stream,
-    update_stream,
-    delete_job,
-    fetch_result,
-    create_job,
-    fetch_job,
-    edit_job,
-    apply_for_job,
-    withdraw_job,
-    fetch_notifications_by_user,
-    mark_notification_as_read,
-    filter_profile,
-    accept_reject,
-    exam_result
-)
+from recruit.views import (create_stream, update_stream, delete_job, fetch_result,
+                           create_job, fetch_job, edit_job, apply_for_job,
+                           withdraw_job, fetch_notifications_by_user,
+                           mark_notification_as_read, filter_profile, accept_reject,
+                           exam_result, get_questions, submit_exam, save_answer,
+                           update_candidate_scheduler, fetch_my_scheduler, track,
+                           fetch_stream_with_questions, fetch_stream,
+                           candidate_scheduler, save_answer)
 
-from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
-from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
+from adminauth.views import create_user_credential,change_role,update_user
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/user/signup', signup, name='signup'),
@@ -98,7 +90,12 @@ urlpatterns = [
     path('api/recruit/candidate/save-answer',save_answer, name='save_answer'),
     path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
     path('api/users/upload-image',upload_cv, name='upload_cv'),
-    
+    path('api/sms', sms_api, name='sms_api'),
+    path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
+    path('api/admin/user/change_role', change_role, name='change_role'),
+    path('api/admin/user/update_user', update_user, name='update_user'),
+
+  
 
 ]
 
