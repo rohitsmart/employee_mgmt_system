@@ -1,19 +1,8 @@
-# from django.conf import settings
-# from django.conf.urls.static import static
-# from django.contrib import admin
-# from django.urls import path, include
-
-# urlpatterns = [
-#     path('admin/', admin.site.urls),
-#     path('user/', include('users.urls')),
-# ]
-
-
 from django.contrib import admin
 from django.urls import path
 from users.views import authorization_to_module, authorize_to_employee, create_empmodule, signup, update_authorization_to_employee, update_authorization_to_module
-from users.views import login,upload_cv
-from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout
+from users.views import signup,register_candidate,login,upload_cv
+from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
@@ -22,27 +11,26 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import (
-    create_stream,
-    update_stream,
-    delete_job,
-    fetch_result,
-    create_job,
-    fetch_job,
-    edit_job,
-    apply_for_job,
-    withdraw_job,
-    fetch_notifications_by_user,
-    mark_notification_as_read,
-    filter_profile,
-    accept_reject,
-    exam_result
-)
+from recruit.views import (create_stream, update_stream, delete_job, fetch_result,
+                           create_job, fetch_job, edit_job, apply_for_job,
+                           withdraw_job, fetch_notifications_by_user,
+                           mark_notification_as_read, filter_profile, accept_reject,
+                           exam_result, get_questions, submit_exam, save_answer,
+                           update_candidate_scheduler, fetch_my_scheduler, track,
+                           fetch_stream_with_questions, fetch_stream,
+                           candidate_scheduler, save_answer)
 
-from recruit.views import create_stream, update_stream, save_answer,submit_exam, fetch_result,candidate_scheduler
-from recruit.views import update_candidate_scheduler,fetch_my_scheduler,track,get_questions, fetch_stream_with_questions,fetch_stream
+from adminauth.views import create_user_credential,change_role,update_user,deactivate_user,delete_user,fetch_user,reset_user_passwrod
+
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
+    path('api/admin/user/change_role', change_role, name='change_role'),
+    path('api/admin/user/update_user', update_user, name='update_user'),
+    path('api/admin/user/deactivate_user', deactivate_user, name='deactivate_user'),
+    path('api/admin/user/delete_user', delete_user, name='delete_user'),
+    path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
+    path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
     path('api/user/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     path('api/user/logout', logout, name='logout'),
@@ -81,7 +69,8 @@ urlpatterns = [
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-    # path('api/recruit/answerQuestion',answer_question,name='answer_question'),
+
+    #path('api/recruit/answerQuestion',answer_question,name='answer_question'),
     # path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
  
@@ -93,6 +82,7 @@ urlpatterns = [
     path('api/recruit/edit-job', edit_job, name='edit_job'),
     path('api/recruit/delete-job', delete_job, name='delete_job'),
     # path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
+    path('api/candidate/register_candidate',register_candidate,name='register_candidate'),
     path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
     path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
@@ -114,11 +104,10 @@ urlpatterns = [
     path('api/admin/users/update-authorization-to-module',update_authorization_to_module,name='update_authorization_to_module'),
     path('api/admin/users/authorize-authorization-to-employee',authorize_to_employee,name='authorization_to_employee'),
     path('api/admin/users/update-authorization-to-employee',update_authorization_to_employee,name='update_authorization_to_employee'),
+    path('api/users/upload-image',upload_cv, name='upload_cv'),
+    path('api/sms', sms_api, name='sms_api'),
 ]
     
-    
-
-
 
 
 

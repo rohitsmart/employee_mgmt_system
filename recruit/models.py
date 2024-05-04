@@ -100,8 +100,7 @@ class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
     candidate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='candidate_authorizations')
 
-    def __str__(self):
-        return f"Authorization: {self.emp} to {self.candidate}"
+
     
 class AuthorizationToModule(models.Model):
     emp = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_authorizations')
@@ -133,8 +132,6 @@ class Chat(models.Model):
     deletedAt = models.DateTimeField(blank=True, null=True)
     updatedAt = models.DateTimeField(auto_now=True)
 
-    def __str__(self):
-        return f"Chat between {self.sender} and {self.receiver}" 
        
 class Notification(models.Model):
     user= models.ForeignKey(User, on_delete=models.CASCADE)
@@ -149,18 +146,12 @@ class Notification(models.Model):
     jobName=models.CharField(max_length=100, null = True)
     currentStatus = models.CharField(max_length=30, null = True)
 
-
-    def __str__(self):
-        return f"Notification for {self.user}" 
     
 class Certification(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
     exam = models.ForeignKey(Exam, on_delete=models.CASCADE)
     certificateUrl = models.URLField()
-    dateIssued = models.DateField()
-
-    def __str__(self):
-        return f"Certification for {self.candidate}"    
+    dateIssued = models.DateField()  
     
 class AuthorizeToModule(models.Model):
     id = models.AutoField(primary_key=True)

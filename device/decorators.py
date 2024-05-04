@@ -3,6 +3,7 @@ from users.models import User
 import jwt
 from functools import wraps
 from django.http import JsonResponse
+
 def jwt_auth_required(view_func):
     @wraps(view_func)
     def _wrapped_view(request, *args, **kwargs):
@@ -27,7 +28,6 @@ def role_required(role):
             user_id = request.user_id 
             
             try:
-                # Check if a user with the provided user_id and role exists
                 is_candidate_exist = User.objects.filter(id=user_id, role=role).exists()
                 if not is_candidate_exist:
                     return JsonResponse({'error': 'You do not have permission to access this resource.'}, status=403)
