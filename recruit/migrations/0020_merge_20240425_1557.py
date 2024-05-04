@@ -6,7 +6,6 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('recruit', '0016_questions_candidate'),
         ('recruit', '0019_rename_currrentstatus_track_currentstatus'),
     ]
 

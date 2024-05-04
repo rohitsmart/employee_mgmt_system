@@ -28,7 +28,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='user',
-            name='emp_id',
+            name='emp',
             field=models.OneToOneField(null=True, on_delete=django.db.models.deletion.CASCADE, to='users.empid'),
         ),
         migrations.AlterField(

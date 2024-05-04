@@ -119,6 +119,8 @@ def update_user(request):
             user_id = request.GET.get('user_id')
             user = User.objects.get(id=user_id)
             data = json.loads(request.body)
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
 
             user.firstName = data.get('firstName', user.firstName)
             user.lastName = data.get('lastName', user.lastName)
@@ -146,6 +148,8 @@ def update_user(request):
 def deactivate_user(request):
     if request.method == 'PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
             user_id = request.GET.get('user_id')
             user = User.objects.get(id=user_id)
             user.active =True
@@ -164,6 +168,8 @@ def deactivate_user(request):
 def delete_user(request):
     if request.method == 'DELETE':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
             user_id = request.GET.get('user_id')
             User.objects.get(id=user_id).delete()
             return JsonResponse({'message': 'User deleted successfully'}, status=200)
@@ -178,6 +184,8 @@ def delete_user(request):
 def reset_user_passwrod(request):
     if request.method == 'PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
             user_id = request.GET.get('user_id')
             user = User.objects.get(id=user_id)
             new_password = 'password'
@@ -195,6 +203,8 @@ def reset_user_passwrod(request):
 @csrf_exempt
 def fetch_user(request):
     try:
+        if not User.objects.filter(id=request.user_id, role='admin').exists():
+            return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
         role = request.GET.get('role')
         
         if role == 'candidate':
@@ -207,6 +217,7 @@ def fetch_user(request):
             return JsonResponse({'error': 'Invalid role'}, status=400)
 
         return JsonResponse({'users': list(users)}, status=200)
+    
     
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
