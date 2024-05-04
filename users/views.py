@@ -28,10 +28,20 @@ def signup(request):
         data = json.loads(request.body)
 
         if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
-            email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
-            last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
-            last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
-            emp_id = last_emp_id + 1
+            if data['role'] == 'employee':
+                try:
+                    mobile_number = int(data['mobileNumber'])
+                    if mobile_number < 1000000000 or mobile_number >= 10000000000:
+                        return JsonResponse({'error': "Mobile number must be a 10-digit integer"}, status=400)
+                except ValueError:
+                    return JsonResponse({'error': "Mobile number must be an integer"}, status=400)
+
+                email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
+                last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
+                last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
+                emp_id = last_emp_id + 1
+            else:
+                return JsonResponse({'error': "Role must be 'employee' to proceed"}, status=400)
 
             password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
 

@@ -15,11 +15,14 @@ from django.contrib.auth.hashers import make_password
 
 @require_POST
 @csrf_exempt
-#@jwt_auth_required
+@jwt_auth_required
 def create_user_credential(request):
     try:
         data = json.loads(request.body)
         email = data.get('email')
+        if not User.objects.filter(id=request.user_id, role='admin').exists():
+            return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
+        
         user = User.objects.filter(email=email).first()
         
         if user:
@@ -76,9 +79,12 @@ def generate_password():
 
 @require_POST
 @csrf_exempt
-#@jwt_auth_required
+@jwt_auth_required
 def change_role(request):
     try:
+        if not User.objects.filter(id=request.user_id, role='admin').exists():
+            return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
+        
         user_id = request.GET.get('user_id')
         user = User.objects.get(id=user_id)
         

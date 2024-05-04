@@ -18,8 +18,8 @@ class User(models.Model):
     degree=models.CharField(max_length=100, null=True)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=100, default='candidate')  
-    mobileNumber = models.CharField(unique=True, max_length=15)
-    password = models.CharField(max_length=255, null=True)
+    mobileNumber = models.BigIntegerField(unique=False)
+    password = models.CharField(max_length=512, null=True)
     cv_url=models.URLField(null=True)
     active = models.BooleanField(default=False)
 
