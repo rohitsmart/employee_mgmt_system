@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 from project.decorators import jwt_auth_required
+from recruit.models import AuthorizationToEmployee, AuthorizeToModule
 from users.serializers import UserSerializer
 from .models import User
 from .models import EmpID
@@ -291,3 +292,87 @@ def get_empModule(request):
         return JsonResponse({'error': 'Only GET requests are allowed'})    
             
                     
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def authorization_to_module(request):
+    if request.method=='POST':
+        try:
+            data=json.loads(request.body)
+            employee_id=data.get('employee_id')
+            module_id=data.get('module_id')
+            authorizeToModule=AuthorizeToModule.objects.create(employee_id=employee_id, module_id=module_id)
+            authorizeToModule.save()           
+            return JsonResponse({'success': 'employee authorized successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'})
+    
+@csrf_exempt
+@require_http_methods(['PUT'])
+@jwt_auth_required
+def update_authorization_to_module(request):
+    if request.method=='PUT':
+        try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User is unauthenticated'})
+            module=request.GET.get('id')
+            if not module:
+                return JsonResponse({'message':'module not found'})
+            data = json.loads(request.body)
+            authorizeToModule= AuthorizeToModule.objects.get(id=module)
+            authorizeToModule.module_id = data.get('module_id')
+            authorizeToModule.employee_id=data.get('employee_id')
+            authorizeToModule.save()
+            return JsonResponse({'message':'authorization updated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed'})    
+    
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def authorize_to_employee(request):
+    if request.method == 'POST':
+        try:
+            user=request.user_id
+            if not user:
+                return JsonResponse({'message': 'User is unauthenticated'})
+            data=json.load(request.body)
+            emp_id=data.get('emp_id')
+            candidate_id=data.get('candidate_id')
+            authEmployee=AuthorizationToEmployee.objects.create(emp_id=emp_id,candidate_id=candidate_id)
+            authEmployee.save()
+            return JsonResponse({'success':'employee is authorized to employee'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'}) 
+    
+@csrf_exempt
+@require_http_methods(['PUT'])
+@jwt_auth_required
+def update_authorization_to_employee(request):
+    if request.method == 'PUT':
+        try:
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User is unauthenticated'})
+            authEmployee=request.GET.get('id')
+            if not authEmployee:
+                return JsonResponse({'message':'module not found'})
+            data = json.loads(request.body)
+            authEmployee= AuthorizationToEmployee.objects.get(id=authEmployee)
+            authEmployee.module_id = data.get('module_id')
+            authEmployee.employee_id=data.get('employee_id')
+            authEmployee.save()
+            return JsonResponse({'success': 'authorization to to candidate is updated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only PUT requests are allowed'})    
+    
+    

@@ -33,7 +33,7 @@ class Migration(migrations.Migration):
                 ("active", models.BooleanField(default=False)),
                 ("cv_url",models.URLField()),
                 (
-                    "emp_id",
+                    "emp",
                     models.OneToOneField(
                         on_delete=django.db.models.deletion.CASCADE, to="users.empid"
                     ),
