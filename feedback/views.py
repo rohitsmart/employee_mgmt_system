@@ -4,13 +4,14 @@ from users.models import User
 from feedback.models import Feedback
 import json
 from django.views.decorators.csrf import csrf_exempt
-from .decorators import jwt_auth_required
+from .decorators import jwt_auth_required,role_required
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 
 @csrf_exempt
 @require_POST
 @jwt_auth_required
+@role_required('employee')
 def create_feedback(request):
     if request.method == 'POST':
         try:
@@ -48,6 +49,7 @@ def create_feedback(request):
 @csrf_exempt
 @jwt_auth_required
 @require_http_methods(["PUT"])
+@role_required('employee')
 def update_feedback(request):
     if request.method=='PUT':
         try:
@@ -100,6 +102,7 @@ def get_project(request):
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @jwt_auth_required
+@role_required('employee')
 def delete_feedback(request):
     if request.method == 'DELETE':
         try:
@@ -121,6 +124,7 @@ def delete_feedback(request):
 @csrf_exempt
 @require_POST
 @jwt_auth_required
+@role_required('employee')
 def post_feedback(request):
     try:
         user_id = request.user_id

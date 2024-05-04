@@ -3,6 +3,8 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from task.models import Task
 import json
+from recruit.models import AuthorizeToModule
+from users.models import  User
 from .decorators import jwt_auth_required
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
@@ -17,6 +19,9 @@ def create_task(request):
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User is unauthenticated'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to add device'})
             module_id = request.GET.get('id')           #here we are creating the module with the project_id
             if not module_id:
                 return JsonResponse({'message': 'Module ID not provided'})
@@ -51,6 +56,9 @@ def update_task(request):
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User is unauthenticated'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to add device'})
             task_id=request.GET.get('id')
             if not task_id:
                 return JsonResponse({'message':'task not found'})
@@ -74,6 +82,9 @@ def get_task(request):
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User is unauthenticated'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to add device'})
             task_id=request.GET.get('id')
             if not task_id:
                 return JsonResponse({'message':'task not found'})
@@ -94,10 +105,15 @@ def get_task(request):
 def delete_task(request):
     if request.method=='DELETE':
         try:
-            
+            user=request.user_id
+            if not user:
+                return JsonResponse({'message': 'user not found'})           
             task_id=request.GET.get('id')  
             if not task_id:
                 return JsonResponse({'message':'task not found'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to add device'})
             project=Task.objects.get(id=task_id)
             project.delete()
             return JsonResponse({'message':'task deleted successfully'})

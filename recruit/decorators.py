@@ -1,9 +1,7 @@
-# decorators.py
-
 import jwt
 from functools import wraps
 from django.http import JsonResponse
-from project.models import Token
+
 from users.models import User
 
 def jwt_auth_required(view_func):
@@ -13,8 +11,7 @@ def jwt_auth_required(view_func):
             bearer, token = request.headers['Authorization'].split()
             if bearer != 'Bearer':
                 return JsonResponse({'error': 'Invalid Authorization Header'}, status=401)
-            if not Token.objects.filter(token=token).exists():
-                return JsonResponse({'message': 'Token is expired'}, status=400)
+
             decoded_token = jwt.decode(token, 'kkfwnfnfnjfknerkbeg', algorithms=['HS256'])
             request.user_id = decoded_token.get('user_id')
             return view_func(request, *args, **kwargs)

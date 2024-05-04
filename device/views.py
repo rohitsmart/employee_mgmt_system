@@ -5,11 +5,8 @@ from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 import json
-from assign.models import Assign
-from project.models import Project
-from module.models import Module
-from task.models import Task
 from device.models import Device
+from recruit.models import AuthorizeToModule
 from .decorators import jwt_auth_required,role_required
 
 @csrf_exempt
@@ -20,16 +17,17 @@ def add_device(request):      #here we assign the task by task id
     if request.method == 'POST':
         try:
             user = request.user_id
-            print(user)
             if not user:
                 return JsonResponse({'error': 'User not found'})
-        
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to access device'})      
             data = json.loads(request.body)
             device_name = data.get('device_name')
             device_type = data.get('device_type')
             deviceID = data.get('deviceID')  
             location = data.get('location')
-            
+                                                  
             # Creating the new model object here
             device = Device.objects.create(        
                 device_name=device_name,
@@ -44,6 +42,7 @@ def add_device(request):      #here we assign the task by task id
             return JsonResponse({'error': str(e)})
     return JsonResponse({'error': 'Only POST requests are allowed'})
 
+@role_required('employee')
 @csrf_exempt
 @require_http_methods(['DELETE'])
 @jwt_auth_required
@@ -53,6 +52,9 @@ def remove_device(request):
             user=request.user_id
             if not user:
                 return JsonResponse({'message': 'user not found'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to access device'})
             device_id=request.GET.get('id')
             if  not device_id:
                 return JsonResponse({'message': 'device id not found'})
@@ -63,19 +65,19 @@ def remove_device(request):
             return JsonResponse({'error': str(e)})
     return JsonResponse({'error':'only DELETE method is supported'}) 
 
+@role_required('employee')
 @csrf_exempt
 @require_GET
 @jwt_auth_required
 def get_device(request):
     if request.method == 'GET':
-        try:
-            
+        try:           
             user=request.user_id
             if not user:
-                return JsonResponse({'message': 'user not found'})            
-            # device_id=request.GET.get('id')
-            # if  not device_id:
-            #     return JsonResponse({'message': 'device id not found'})
+                return JsonResponse({'message': 'user not found'})  
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to access device'})          
             devices=Device.objects.all()
             if not devices:
                 return JsonResponse({'message': 'device not found'})
@@ -92,6 +94,7 @@ def get_device(request):
             return JsonResponse({'error': str(e)})
     return JsonResponse({'error':'only GET method is supported'})
 
+@role_required('employee')
 @csrf_exempt
 @require_http_methods(['PUT'])
 @jwt_auth_required
@@ -101,6 +104,9 @@ def update_device(request):          #updating the device according to the devic
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to access device'})
             device_id = request.GET.get('id')
             if not device_id:
                 return JsonResponse({'message':'device  id not found'})
