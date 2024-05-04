@@ -3,7 +3,7 @@ from leave.models import Leave
 from users.models import User
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
-from .decorators import jwt_auth_required,role_required
+from .decorators import jwt_auth_required
 from django.http import JsonResponse
 import json
 from django.views.decorators.csrf import csrf_exempt

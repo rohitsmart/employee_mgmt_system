@@ -8,6 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('recruit', '0015_certification'),
+        ('users', '0002_alter_user_address_alter_user_cv_url_and_more'),
     ]
 
     operations = [

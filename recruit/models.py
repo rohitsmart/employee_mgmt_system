@@ -98,11 +98,16 @@ class Exam(models.Model):
 
 class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
-    candidate= models.ForeignKey(User, on_delete=models.CASCADE, related_name='candidate_authorizations')
+    candidate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='candidate_authorizations')
 
     def __str__(self):
         return f"Authorization: {self.emp} to {self.candidate}"
-     
+    
+class AuthorizationToModule(models.Model):
+    emp = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_authorizations')
+
+    def __str__(self):
+        return f"Module Authorization: {self.emp}"    
     
 class Job(models.Model):
     STATUS_CHOICES = [
@@ -157,13 +162,7 @@ class Certification(models.Model):
     def __str__(self):
         return f"Certification for {self.candidate}"    
     
-class AuthorizeToModule(models.Model):
-    id = models.AutoField(primary_key=True)
-    employee=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
-    module=models.ForeignKey(EmpModule, on_delete=models.CASCADE)
-    
-   
-                       
+           
 
              
         

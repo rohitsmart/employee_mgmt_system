@@ -5,7 +5,6 @@ from django.views.decorators.csrf import csrf_exempt
 from module.models import Module
 from project.models import Project
 from users.models import User
-from recruit.models import AuthorizeToModule
 import json
 # from rest_framework.authentication import TokenAuthentication
 # from rest_framework.permissions import IsAuthenticated
@@ -14,13 +13,12 @@ import json
 # from django.views.decorators.http import require_POST
 from django.views.decorators.http import require_GET, require_POST
 from django.views.decorators.http import require_http_methods
-from .decorators import jwt_auth_required,role_required
+from .decorators import jwt_auth_required
 
 
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-@role_required('employee')
 def create_module(request):
     if request.method == 'POST':
         try:           
@@ -28,9 +26,6 @@ def create_module(request):
             if not user:
                 return JsonResponse({'message': 'User not found'})
             project_id = request.GET.get('id')           #here we are creating the module with the project_id
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             if not project_id:
                 return JsonResponse({'message': 'Project ID not provided'})
             data = json.loads(request.body)
@@ -59,19 +54,17 @@ def create_module(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'})
+
+
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @jwt_auth_required
-@role_required('employee')
 def delete_module(request):
     if request.method == 'DELETE':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -86,16 +79,12 @@ def delete_module(request):
 @csrf_exempt
 @require_http_methods(["PUT"])
 @jwt_auth_required
-@role_required('employee')
 def update_module(request):
     if request.method == 'PUT':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -116,16 +105,12 @@ def update_module(request):
 
 @require_GET
 @jwt_auth_required
-@role_required('employee')
 def get_module(request):
     if request.method == 'GET':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             module_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'module id not found'})
@@ -145,15 +130,12 @@ def get_module(request):
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-@role_required('employee')
 def create_project(request):
     try:
         user = request.user_id
         if not user:
             return JsonResponse({'error': 'User not found'})
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-        if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
+
         if request.method == 'POST':
             data = json.loads(request.body)
             project_name = data.get('project_name')
@@ -181,16 +163,12 @@ def create_project(request):
 
 @require_GET
 @jwt_auth_required
-@role_required('employee')
 def get_project(request):
     if request.method == 'GET':
         try:
             user = request.user_id
             if not user:
-                return JsonResponse({'error': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
+             return JsonResponse({'error': 'User not found'})
             project_id = request.GET.get('id')
             if not id:
                 return JsonResponse({'message':'project id not found'})
@@ -210,16 +188,12 @@ def get_project(request):
 @require_http_methods(["PUT"])
 @jwt_auth_required  
 @csrf_exempt
-@role_required('employee')
 def update_project(request):
     if request.method == 'PUT':
         try:
             user = request.user_id
             if not user:
              return JsonResponse({'error': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             project_id = request.GET.get('id')
             if not project_id:
                 return JsonResponse({'message':'project id not found'})
@@ -238,20 +212,16 @@ def update_project(request):
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed for updating the project'})    
     
-    
+
 @require_http_methods(["DELETE"])
 @jwt_auth_required    
 @csrf_exempt  
-@role_required('employee')
 def delete_project(request):
     if request.method=='DELETE':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'error': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             project_id=request.GET.get('id')  
             if not project_id:
                 return JsonResponse({'message':'project not found'})

@@ -12,7 +12,7 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import signup
-from users.views import login,upload_cv,create_empmodule,authorization_to_module,update_authorization_to_module
+from users.views import login,create_admin,upload_cv
 from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
@@ -81,8 +81,8 @@ urlpatterns = [
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-    # path('api/recruit/answerQuestion',answer_question,name='answer_question'),
-    # path('api/recruit/saveResult',save_result,name='save_result'),
+    path('api/recruit/answerQuestion',answer_question,name='answer_question'),
+    path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
  
     path('api/recruit/saveAnswer',save_answer,name='save_answer'),
@@ -109,10 +109,10 @@ urlpatterns = [
     path('api/recruit/candidate/save-answer',save_answer, name='save_answer'),
     path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
     path('api/users/upload-image',upload_cv, name='upload_cv'),
-    path('api/users/create-empmodule',create_empmodule,name='create_empmodule'),
-    path('api/admin/users/authorization-to-module',authorization_to_module,name='authorization_to_module'),
-    path('api/admin/users/update-authorization-to-module',update_authorization_to_module,name='update_authorization_to_module'),
     
+    
+
+
 ]
 
 

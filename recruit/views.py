@@ -19,7 +19,6 @@ from django.core.serializers import serialize
 @csrf_exempt
 @require_POST
 # @jwt_auth_required
-
 def create_stream(request):
     if request.method == 'POST':
         try:

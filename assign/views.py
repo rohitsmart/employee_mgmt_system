@@ -8,12 +8,10 @@ from assign.models import Assign
 from project.models import Project
 from module.models import Module
 from task.models import Task
-from recruit.models import AuthorizeToModule
-from .decorators import jwt_auth_required,role_required
+from .decorators import jwt_auth_required
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-@role_required('employee')
 def assign_task(request):      #here we assign the task by task id , tsk can only be assigned by the tl or pm  or admin
     if request.method == 'POST':
         try:
@@ -60,16 +58,12 @@ def assign_task(request):      #here we assign the task by task id , tsk can onl
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @jwt_auth_required
-@role_required('employee')
 def unassign_task(request):          #this api also only accessed by the tl or pm or admin
     if request.method == 'DELETE':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             assign_id = request.GET.get('id')
             if not assign_id:
                 return JsonResponse({'message':'module id not found'})
@@ -84,16 +78,12 @@ def unassign_task(request):          #this api also only accessed by the tl or p
 @csrf_exempt
 @require_http_methods(['PUT'])
 @jwt_auth_required
-@role_required('employee')
 def update_assignTask(request):          # this api also only accessed by the tl or pm or admin
     if request.method == 'PUT':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
-            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
-            if not authorizeToModule:
-                return JsonResponse({'error': 'you are not authorized to add device'})
             assign_id = request.GET.get('id')
             if not assign_id:
                 return JsonResponse({'message':'task not assigned'})
@@ -114,13 +104,15 @@ def update_assignTask(request):          # this api also only accessed by the tl
 
 @require_GET
 @jwt_auth_required
-@role_required('employee')
 def get_assignedTask(request):
     if request.method=='GET':
         try:
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
+            # assign_id = request.GET.get('id')
+            # if not assign_id:
+            #     return JsonResponse({'message':' assign task not found'})
             assigns=Assign.objects.all()
             if not assigns:
                 return JsonResponse({'message': 'assign task not found'})

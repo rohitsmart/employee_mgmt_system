@@ -23,6 +23,7 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(primary_key=True, serialize=False)),
                 ("userName",models.CharField(max_length=100, null=True)),
                 ("fullName", models.CharField(max_length=100, null=True)),
+                # ("lastName", models.CharField(max_length=100, null=True)),
                 ("address",models.TextField()),
                 ("degree",models.CharField(max_length=100)),
                 ("email", models.EmailField(max_length=254, unique=True)),
@@ -31,7 +32,12 @@ class Migration(migrations.Migration):
                 ("password", models.CharField(max_length=255)),
                 ("active", models.BooleanField(default=False)),
                 ("cv_url",models.URLField()),
-                ("emp_id",models.OneToOneField(on_delete=django.db.models.deletion.CASCADE, to="users.empid")),
+                (
+                    "emp_id",
+                    models.OneToOneField(
+                        on_delete=django.db.models.deletion.CASCADE, to="users.empid"
+                    ),
+                ),
             ],
         ),
     ]
