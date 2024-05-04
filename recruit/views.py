@@ -39,6 +39,7 @@ def create_stream(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'})
 
+
 @csrf_exempt
 @require_http_methods(['PUT'])
 def update_stream(request):
@@ -56,6 +57,7 @@ def update_stream(request):
             return JsonResponse({'error': 'stream not found'})
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'})
+  
     
 @require_GET
 def fetch_stream(request):
