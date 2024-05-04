@@ -1,5 +1,5 @@
 from django.db import models
-from users.models import User
+from users.models import EmpModule, User
 
 class ApplyJob(models.Model):
     id=models.AutoField(primary_key=True)
@@ -153,7 +153,10 @@ class Certification(models.Model):
     certificateUrl = models.URLField()
     dateIssued = models.DateField()  
     
-           
+class AuthorizeToModule(models.Model):
+    id = models.AutoField(primary_key=True)
+    employee=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
+    module=models.ForeignKey(EmpModule, on_delete=models.CASCADE)           
 
              
         

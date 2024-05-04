@@ -7,6 +7,7 @@ import json
 from assign.models import Assign
 from project.models import Project
 from module.models import Module
+from recruit.models import AuthorizeToModule
 from task.models import Task
 from .decorators import jwt_auth_required
 @csrf_exempt
@@ -64,6 +65,9 @@ def unassign_task(request):          #this api also only accessed by the tl or p
             user = request.user_id
             if not user:
                 return JsonResponse({'message': 'User not found'})
+            authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+            if not authorizeToModule:
+                return JsonResponse({'error': 'you are not authorized to add device'})
             assign_id = request.GET.get('id')
             if not assign_id:
                 return JsonResponse({'message':'module id not found'})
