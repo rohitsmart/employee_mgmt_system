@@ -430,8 +430,6 @@ def sms_api(request):
             raise ValueError("Invalid API key")
 
         messageid = str(uuid.uuid4())
-
-
         response_data = {
             "status": 100,
             "description": "Message submitted with tracking id (UID)",

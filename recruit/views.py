@@ -7,7 +7,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 import json
 from project.decorators import jwt_auth_required
-from recruit.models import Stream
+from recruit.models import AuthorizeToModule, Stream
 import random
 from recruit.models import Questions, Scheduler
 from recruit.models import Exam,Track
@@ -256,7 +256,7 @@ def fetch_result(request):
  
 @require_POST 
 @csrf_exempt
-def candidate_scheduler(request):
+def candidate_scheduler(request):          #need to updte this for the authorization that only hr can do this
     if request.method=='POST':
         try:
             data = json.loads(request.body)
@@ -303,7 +303,8 @@ def update_candidate_scheduler(request):
  
 @require_GET
 @csrf_exempt
-def fetch_my_scheduler(request):
+@jwt_auth_required
+def fetch_my_scheduler(request):          #this can be done by the candidate
     if request.method=='GET':
         try:
             candidate_id=request.GET.get('id')
@@ -325,9 +326,6 @@ def track(request):
             if not candidate_id:
                 return JsonResponse({'message':'track not found for the candidate'})
             tracks = Track.objects.filter(candidate_id=candidate_id)
-            # leaves=Leave.objects.filter(user_id=user_id)
-            # if not leaves:
-            #     return JsonResponse({'message':'leave not found'})
             track_result=[]
             for track in tracks:
                 track_result.append({
@@ -346,14 +344,14 @@ def track(request):
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-def create_job(request):
+def create_job(request): 
     try:
         user =request.user_id
         data = json.loads(request.body)
-        is_emp_exists = User.objects.filter(id=user, role='employee').exists()
-       
-        if is_emp_exists:
-            Job.objects.create(   
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+        if not authorizeToModule:
+            return JsonResponse({'error': 'you are not authorized to add device'})
+        Job.objects.create(   
                 status=data.get('status'),       
                 jobName=data.get('jobName'),
                 jobDescription=data.get('jobDescription'),
@@ -362,9 +360,7 @@ def create_job(request):
                 expire=data.get('expire'),
                 creater_id=user  
             )
-            return JsonResponse({'message': 'Job created successfully'})
-        else:
-            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+        return JsonResponse({'message': 'Job created successfully'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
