@@ -18,13 +18,13 @@ from django.core.serializers import serialize
 
 @csrf_exempt
 @require_POST
-# @jwt_auth_required
+@jwt_auth_required
 def create_stream(request):
     if request.method == 'POST':
         try:
-            # user = request.user_id
-            # if not user:
-            #     return JsonResponse({'message': 'User is unauthenticated'})
+            user = request.user_id
+            if not user:
+                return JsonResponse({'message': 'User is unauthenticated'})
             data = json.loads(request.body)
             streamName = data.get('streamName')
 
@@ -42,6 +42,7 @@ def create_stream(request):
 
 @csrf_exempt
 @require_http_methods(['PUT'])
+@jwt_auth_required
 def update_stream(request):
     if request.method == 'PUT':
         try:
@@ -60,6 +61,7 @@ def update_stream(request):
   
     
 @require_GET
+@jwt_auth_required
 def fetch_stream(request):
     if request.method == 'GET':
         try:
@@ -88,7 +90,7 @@ def get_questions(request):         #this api will get the random question and s
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
                 questions_data = json.load(file)
-            stream_id = request.GET.get('id') 
+            stream_id = request.GET.get('stream_id') 
             total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
             if len(total_questions) < 5:
                 return JsonResponse({"message": "Questions are less than requirement"})
@@ -201,7 +203,7 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                 candidate = User.objects.get(id=candidate_id)
                 track = Track.objects.create(
                     candidate=candidate,
-                    currrentStatus="Passed Exam",
+                    currentStatus="Passed Exam",
                     round1="Cleared"
                 )
                 track.save()
@@ -213,7 +215,7 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                 candidate = User.objects.get(id=candidate_id)
                 track = Track.objects.create(
                     candidate=candidate,
-                    currrentStatus="failed the Exam",
+                    currentStatus="failed the Exam",
                     round1="failed"
                 )
                 track.save()
@@ -329,7 +331,7 @@ def track(request):
             track_result=[]
             for track in tracks:
                 track_result.append({
-                    'currrentStatus':track.currrentStatus,
+                    'currentStatus':track.currentStatus,
                    'round1':track.round1
                 }) 
             return JsonResponse({'track':track_result})

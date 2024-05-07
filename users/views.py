@@ -4,6 +4,7 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
+# from .decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule
 from users.serializers import UserSerializer
@@ -236,7 +237,7 @@ def create_empmodule(request):
                 data=json.loads(request.body)
                 moduleName=data.get('moduleName')
                 moduleKey=data.get('moduleKey')   #this will be the alphanumeric filed
-                empModule=EmpModule.create.objects(
+                empModule=EmpModule.objects.create(
                     moduleName=moduleName,
                     moduleKey=moduleKey
                 )
@@ -284,7 +285,7 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-@jwt_auth_required
+# @role_required('admin')          #this  role_required is not working so i need to fix this                                       
 def authorization_to_module(request):
     if request.method=='POST':
         try:
@@ -301,13 +302,10 @@ def authorization_to_module(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-@jwt_auth_required
+# @role_required('admin')
 def update_authorization_to_module(request):
     if request.method=='PUT':
         try:
-            user = request.user_id
-            if not user:
-                return JsonResponse({'message': 'User is unauthenticated'})
             module=request.GET.get('id')
             if not module:
                 return JsonResponse({'message':'module not found'})
@@ -324,14 +322,11 @@ def update_authorization_to_module(request):
     
 @csrf_exempt
 @require_POST
-@jwt_auth_required
+# @role_required('admin')
 def authorize_to_employee(request):
     if request.method == 'POST':
         try:
-            user=request.user_id
-            if not user:
-                return JsonResponse({'message': 'User is unauthenticated'})
-            data=json.load(request.body)
+            data=json.loads(request.body)
             emp_id=data.get('emp_id')
             candidate_id=data.get('candidate_id')
             authEmployee=AuthorizationToEmployee.objects.create(emp_id=emp_id,candidate_id=candidate_id)
@@ -344,13 +339,10 @@ def authorize_to_employee(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-@jwt_auth_required
+# @role_required('admin')
 def update_authorization_to_employee(request):
     if request.method == 'PUT':
         try:
-            user = request.user_id
-            if not user:
-                return JsonResponse({'message': 'User is unauthenticated'})
             authEmployee=request.GET.get('id')
             if not authEmployee:
                 return JsonResponse({'message':'module not found'})

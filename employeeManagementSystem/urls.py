@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from users.views import authorization_to_module, authorize_to_employee, create_empmodule, signup, update_authorization_to_employee, update_authorization_to_module
+from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule
 from users.views import signup,register_candidate,login,upload_cv
 from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
@@ -31,7 +31,7 @@ urlpatterns = [
     path('api/admin/user/delete_user', delete_user, name='delete_user'),
     path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
     path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
-    path('api/user/signup', signup, name='signup'),
+    path('api/user/employee/signup', signup, name='signup'),
     path('api/user/login', login, name='login'),
     path('api/user/logout', logout, name='logout'),
     path('api/user/update_password', update_password, name='update_password'),
@@ -69,11 +69,9 @@ urlpatterns = [
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-
     #path('api/recruit/answerQuestion',answer_question,name='answer_question'),
     # path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
- 
     path('api/recruit/saveAnswer',save_answer,name='save_answer'),
     path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
@@ -100,9 +98,11 @@ urlpatterns = [
     path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
     path('api/users/upload-cv',upload_cv, name='upload_cv'),
     path('api/users/create-empmodule',create_empmodule,name='create_empmodule'),
+    path('api/users/update-empmodule',update_empModule,name='update_empmodule'),
+    path('api/users/get-empmodule',get_empModule,name='create_empmodule'),
     path('api/admin/users/authorization-to-module',authorization_to_module,name='authorization_to_module'),
     path('api/admin/users/update-authorization-to-module',update_authorization_to_module,name='update_authorization_to_module'),
-    path('api/admin/users/authorize-authorization-to-employee',authorize_to_employee,name='authorization_to_employee'),
+    path('api/admin/users/authorization-to-employee',authorize_to_employee,name='authorization_to_employee'),
     path('api/admin/users/update-authorization-to-employee',update_authorization_to_employee,name='update_authorization_to_employee'),
     path('api/users/upload-image',upload_cv, name='upload_cv'),
     path('api/sms', sms_api, name='sms_api'),

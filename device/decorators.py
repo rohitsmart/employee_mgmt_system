@@ -25,8 +25,7 @@ def role_required(role):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            user_id = request.user_id 
-            
+            user_id = request.user_id
             try:
                 is_candidate_exist = User.objects.filter(id=user_id, role=role).exists()
                 if not is_candidate_exist:
