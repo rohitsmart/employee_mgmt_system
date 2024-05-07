@@ -123,45 +123,7 @@ def get_questions(request):         #this api will get the random question and s
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-    
-@require_POST
-@csrf_exempt
-def answer_question(request):
-    if request.method == 'POST':
-        try:
-            json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
-            with open(json_file_path, 'r') as file:
-                json_question = json.load(file)
-                data = json.loads(request.body)
-                candidate_id = data.get('candidate_id')
-                question_id = data.get('id')
-                candidateResponse = data.get('candidateResponse') 
-                Date = data.get('Date')
-                                           
-                question = next((question for question in json_question if question.get('id') == question_id))
-                if question:
-                    correctAnswer = question.get('correctAnswer')
-                    question = Questions.objects.create(
-                        question_id=question_id,
-                        correctResponse=correctAnswer,
-                    )
-                    question.save()
-                    exam = Exam.objects.create(
-                        candidate_id=candidate_id,
-                        question_id=question_id,
-                        candidateResponse=candidateResponse,
-                        correctResponse=correctAnswer,
-                        Date=Date,                      
-                    )
-                    exam.save()
-                    return JsonResponse({'message': 'answer submitted successfully'})
-                else:
-                    return JsonResponse({'message': 'question not found'})  
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
-    
+        
 @require_POST
 @csrf_exempt
 def save_result(request):               #candidate will get only 5 questions according to that result will bw calculated
