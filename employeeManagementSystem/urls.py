@@ -11,7 +11,7 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import (create_stream, update_stream, delete_job, fetch_result,
+from recruit.views import (answer_question, create_stream, save_result, update_stream, delete_job, fetch_result,
                            create_job, fetch_job, edit_job, apply_for_job,
                            withdraw_job, fetch_notifications_by_user,
                            mark_notification_as_read, filter_profile, accept_reject,
@@ -69,8 +69,8 @@ urlpatterns = [
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-    #path('api/recruit/answerQuestion',answer_question,name='answer_question'),
-    # path('api/recruit/saveResult',save_result,name='save_result'),
+    path('api/recruit/answerQuestion',answer_question,name='answer_question'),
+    path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
     path('api/recruit/saveAnswer',save_answer,name='save_answer'),
     path('api/recruit/submitExam',submit_exam,name='submit_exam'),
