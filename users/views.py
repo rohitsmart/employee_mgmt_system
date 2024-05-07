@@ -96,7 +96,65 @@ def register_candidate(request):
         except Exception as e:
             return JsonResponse({'error': str(e)})
 
-            
+
+# @csrf_exempt
+# @require_POST
+# def register_candidate(request):
+#     if request.method == 'POST':
+#         try:
+
+#             data = json.loads(request.body)
+#             fullName = data.get('fullName')
+#             degree = data.get('degree')
+#             email = data.get('email')
+#             mobileNumber = data.get('mobileNumber')
+
+#             candidate = User.objects.create(
+#                 fullName=fullName,
+#                 degree=degree,
+#                 email=email,
+#                 mobileNumber=mobileNumber,
+#                 role='candidate'
+#             )
+#             if request.FILES.get('file'):
+#                 file = request.FILES['file']
+#                 timestamp = int(datetime.now().timestamp())
+#                 filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+#                 path = default_storage.save(f'public/files/{filename}', file)
+#                 cv_url = default_storage.url(path)
+#                 image = User(cv_url=cv_url)
+#                 candidate.save()
+
+#             return JsonResponse({'message': 'Profile submitted successfully'})
+#         except Exception as e:
+#             return JsonResponse({'error': str(e)})
+#     else:
+#         return JsonResponse({'error': 'Only POST requests are allowed'})
+
+
+@require_GET
+def get_candidate_profile(request):
+    if request.method=='GET':
+        try:
+            candidates=User.objects.filter(role='candidate')
+            if not candidates:
+                return JsonResponse({'message': 'candidates not found'})
+            candidate_data = []
+            for candidate in candidates:
+                candidate_data.append({
+                    'fullName': candidate.fullName,
+                    'degree': candidate.degree,
+                    'email': candidate.email,
+                    'mobileNumber': candidate.mobileNumber,
+                    'active':candidate.active,
+                    'cv_url': candidate.cv_url
+                })
+                return JsonResponse({'candidates': candidate_data})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+        else:
+            return JsonResponse({'error': 'Only GET requests are allowed'})
+                    
 
 @csrf_exempt
 def login(request):
@@ -211,6 +269,7 @@ def update_password_with_otp(request):
     
 
 @csrf_exempt
+# @jwt_auth_required
 def upload_cv(request):
     if request.method == 'POST':
         try:

@@ -123,61 +123,7 @@ def get_questions(request):         #this api will get the random question and s
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
-        
-@require_POST
-@csrf_exempt
-def save_result(request):               #candidate will get only 5 questions according to that result will bw calculated
-    if request.method=='POST':
-        try:
-            data = json.loads(request.body)
-            candidate_id=data.get('candidate_id')
-            date=data.get('date')
-            maximum=data.get('maximum')
-            needed=data.get('needed')
-            scheduler_id=data.get('scheduler_id')
-            
-            calculate_marks=Exam.objects.filter(candidate_id=candidate_id, status='correct')
-            total_marks=len(calculate_marks)*2
-            
-            result=Result.objects.create(
-                candidate_id=candidate_id,
-                date=date,
-                maximum=maximum,
-                needed=needed,
-                obtained=total_marks,
-                scheduler_id=scheduler_id
-            )
-            result.save()
-            if total_marks>=needed:
-                result.status="pass"
-                result.save()
-                candidate = User.objects.get(id=candidate_id)
-                track = Track.objects.create(
-                    candidate=candidate,
-                    currentStatus="Passed Exam",
-                    round1="Cleared"
-                )
-                track.save()
-                return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam'})          
-            
-            else:
-                result.status="fail"
-                result.save()
-                candidate = User.objects.get(id=candidate_id)
-                track = Track.objects.create(
-                    candidate=candidate,
-                    currentStatus="failed the Exam",
-                    round1="failed"
-                )
-                track.save()
-                return JsonResponse({'total_marks':total_marks,'message': 'candidate failed the exam'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})         
-    
-        
-
+ 
 @require_POST
 @csrf_exempt
 def save_answer(request):           #in this we are savig the answer by the candidate
@@ -188,7 +134,7 @@ def save_answer(request):           #in this we are savig the answer by the cand
                 json_question = json.load(file)
                 data = json.loads(request.body)
                 candidate_id = data.get('candidate_id')
-                question_id = data.get('id')
+                question_id = data.get('question_id')
                 candidateResponse = data.get('candidateResponse') 
                 Date = data.get('Date')
                 scheduler_id=data.get('scheduler_id')
@@ -201,12 +147,19 @@ def save_answer(request):           #in this we are savig the answer by the cand
                         correctResponse=correctAnswer,
                     )
                     question.save()
+                    if candidateResponse == correctAnswer:
+                        status = "correct"
+                    else:
+                        status = "incorrect"
+
                     exam = Exam.objects.create(
                         candidate_id=candidate_id,
                         question_id=question_id,
                         candidateResponse=candidateResponse,
                         correctResponse=correctAnswer,
-                        Date=Date,   
+                        Date=Date,
+                        status=status,
+                        round=1,   
                         scheduler_id=scheduler_id                   
                     )
                     exam.save()
@@ -217,6 +170,8 @@ def save_answer(request):           #in this we are savig the answer by the cand
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
+     
+        
 
 @require_POST
 @csrf_exempt
@@ -292,7 +247,7 @@ def fetch_result(request):
                     'correctResponse':result_item.correctResponse,
                    'status':result_item.status
                 }) 
-                # return JsonResponse({'result':result_declared})
+
             return JsonResponse({'result': result_declared})
         except Exception as e:
             return JsonResponse({'error': str(e)})

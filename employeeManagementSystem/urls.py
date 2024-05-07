@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
-from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule
-from users.views import signup,register_candidate,login,upload_cv
+from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv
+from users.views import signup,register_candidate,login
 from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
@@ -11,14 +11,14 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import (create_stream, save_result, update_stream, delete_job, fetch_result,
+from recruit.views import (create_stream, update_stream, delete_job, fetch_result,
                            create_job, fetch_job, edit_job, apply_for_job,
                            withdraw_job, fetch_notifications_by_user,
                            mark_notification_as_read, filter_profile, accept_reject,
                            exam_result, get_questions, submit_exam, save_answer,
                            update_candidate_scheduler, fetch_my_scheduler, track,
                            fetch_stream_with_questions, fetch_stream,
-                           candidate_scheduler, save_answer)
+                           candidate_scheduler)
 
 from adminauth.views import create_user_credential,change_role,update_user,deactivate_user,delete_user,fetch_user,reset_user_passwrod
 
@@ -69,10 +69,7 @@ urlpatterns = [
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
-    path('api/recruit/saveResult',save_result,name='save_result'),
     path('api/recruit/exam_result',exam_result,name='exam_result'),
-    path('api/recruit/saveAnswer',save_answer,name='save_answer'),
-    path('api/recruit/submitExam',submit_exam,name='submit_exam'),
     path('api/recruit/fetchResult',fetch_result,name='fetch_result'),
     path('api/recruit/create_job', create_job, name='create_job'),
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
@@ -95,7 +92,6 @@ urlpatterns = [
     path('api/recruit/candidate/candidate-scheduler',candidate_scheduler, name='candidate_scheduler'),
     path('api/recruit/candidate/save-answer',save_answer, name='save_answer'),
     path('api/recruit/candidate/submit-exam',submit_exam, name='submit_exam'),
-    path('api/users/upload-cv',upload_cv, name='upload_cv'),
     path('api/users/create-empmodule',create_empmodule,name='create_empmodule'),
     path('api/users/update-empmodule',update_empModule,name='update_empmodule'),
     path('api/users/get-empmodule',get_empModule,name='create_empmodule'),
@@ -103,8 +99,9 @@ urlpatterns = [
     path('api/admin/users/update-authorization-to-module',update_authorization_to_module,name='update_authorization_to_module'),
     path('api/admin/users/authorization-to-employee',authorize_to_employee,name='authorization_to_employee'),
     path('api/admin/users/update-authorization-to-employee',update_authorization_to_employee,name='update_authorization_to_employee'),
-    path('api/users/upload-image',upload_cv, name='upload_cv'),
+    path('api/users/upload-cv',upload_cv, name='upload_cv'),
     path('api/sms', sms_api, name='sms_api'),
+    path('api/users/candidate/get-candidate-profile', get_candidate_profile, name='get_candidate_profile'),
 ]
     
 
