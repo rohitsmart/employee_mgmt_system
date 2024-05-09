@@ -11,7 +11,7 @@ from assign.views import assign_task,unassign_task,update_assignTask,get_assigne
 from device.views import add_device, remove_device, get_device,update_device
 from attendance.views import mark_attendance, get_attendance
 from leave.views import apply_leave, update_leave, get_leave, delete_leave
-from recruit.views import (create_stream, update_stream, delete_job, fetch_result,
+from recruit.views import (clear_answer, create_stream, update_stream, delete_job, fetch_result,
                            create_job, fetch_job, edit_job, apply_for_job,
                            withdraw_job, fetch_notifications_by_user,
                            mark_notification_as_read, filter_profile, accept_reject,
@@ -102,6 +102,7 @@ urlpatterns = [
     path('api/users/upload-cv',upload_cv, name='upload_cv'),
     path('api/sms', sms_api, name='sms_api'),
     path('api/users/candidate/get-candidate-profile', get_candidate_profile, name='get_candidate_profile'),
+    path('api/users/candidate/clear-answer', clear_answer, name='clear_answer'),
 ]
     
 

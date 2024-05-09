@@ -170,6 +170,25 @@ def save_answer(request):           #in this we are savig the answer by the cand
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
+
+@require_http_methods(['DELETE'])
+@csrf_exempt
+def clear_answer(request):
+    if request.method=='DELETE':
+        try:
+            candidate_id = request.GET.get('candidate_id')
+            question_id = request.GET.get('question_id')
+            exam=Exam.objects.filter(question_id=question_id,candidate_id=candidate_id)
+            exam.delete()
+            return JsonResponse({'success':'candidate response cleared successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)})
+    else:
+        return JsonResponse({'error': 'Only DELETE requests are allowed for answering the question'})    
+    
+        
+        
+        
      
         
 
