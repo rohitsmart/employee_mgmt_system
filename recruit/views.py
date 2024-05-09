@@ -126,7 +126,7 @@ def get_questions(request):         #this api will get the random question and s
  
 @require_POST
 @csrf_exempt
-def save_answer(request):           #in this we are savig the answer by the candidate
+def save_answer(request):  # In this we are saving the answer by the candidate
     if request.method == 'POST':
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
@@ -137,7 +137,7 @@ def save_answer(request):           #in this we are savig the answer by the cand
                 question_id = data.get('question_id')
                 candidateResponse = data.get('candidateResponse') 
                 Date = data.get('Date')
-                scheduler_id=data.get('scheduler_id')
+                scheduler_id = data.get('scheduler_id')
                                            
                 question = next((question for question in json_question if question.get('id') == question_id))
                 if question:
@@ -151,18 +151,30 @@ def save_answer(request):           #in this we are savig the answer by the cand
                         status = "correct"
                     else:
                         status = "incorrect"
-
-                    exam = Exam.objects.create(
-                        candidate_id=candidate_id,
-                        question_id=question_id,
-                        candidateResponse=candidateResponse,
-                        correctResponse=correctAnswer,
-                        Date=Date,
-                        status=status,
-                        round=1,   
-                        scheduler_id=scheduler_id                   
-                    )
-                    exam.save()
+                    exists = Exam.objects.filter(question_id=question_id)
+                    if exists:
+                        exists = exists.first()
+                        exists.candidate_id = candidate_id
+                        exists.question_id = question_id
+                        exists.candidateResponse = candidateResponse
+                        exists.correctResponse = correctAnswer
+                        exists.Date = Date
+                        exists.status = status
+                        exists.round = 1
+                        exists.scheduler_id = scheduler_id
+                        exists.save()
+                    else:
+                        exam = Exam.objects.create(
+                            candidate_id=candidate_id,
+                            question_id=question_id,
+                            candidateResponse=candidateResponse,
+                            correctResponse=correctAnswer,
+                            Date=Date,
+                            status=status,
+                            round=1,
+                            scheduler_id=scheduler_id                   
+                        )
+                        exam.save()
                     return JsonResponse({'message': 'answer submitted successfully'})
                 else:
                     return JsonResponse({'message': 'question not found'})  
@@ -170,6 +182,7 @@ def save_answer(request):           #in this we are savig the answer by the cand
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
+
 
 @require_http_methods(['DELETE'])
 @csrf_exempt
@@ -179,8 +192,12 @@ def clear_answer(request):
             candidate_id = request.GET.get('candidate_id')
             question_id = request.GET.get('question_id')
             exam=Exam.objects.filter(question_id=question_id,candidate_id=candidate_id)
-            exam.delete()
-            return JsonResponse({'success':'candidate response cleared successfully'})
+            if exam:
+                exam.delete()
+                return JsonResponse({'success':'candidate response cleared successfully'})
+            else:
+                return JsonResponse({'error': 'Candidate response could not be cleared'}, status=400)
+       
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
