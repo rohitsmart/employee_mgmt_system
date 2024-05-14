@@ -23,6 +23,9 @@ from django.views.decorators.csrf import csrf_exempt
 import random
 from django.core.cache import cache
 import uuid
+from django.http import HttpResponse
+from django.core.files.storage import default_storage
+import mimetypes
 
 
 @csrf_exempt
@@ -73,87 +76,72 @@ def signup(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @csrf_exempt
 @require_POST
 def register_candidate(request):
-        try:
-            data=json.loads(request.body)
-            fullName=data.get('fullName')
-            degree=data.get('degree')
-            email=data.get('email')
-            mobileNumber=data.get('mobileNumber')
+    try:
+        if 'file' in request.FILES:
+            file = request.FILES['file']
+            if file and allowed_file(file.name):
+                timestamp = int(datetime.now().timestamp())
+                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                path = default_storage.save(f'public/files/{filename}', file)
+                cv_url = default_storage.url(path)
 
-            candidate=User.objects.create(
-            fullName=fullName,
-            degree=degree,
-            email=email,
-            mobileNumber=mobileNumber,
-            role='candidate'
-            )
-            candidate.save()
-            return JsonResponse({'messge':'profile submitted successfully'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
+                fullName = request.POST.get('fullName')
+                degree = request.POST.get('degree')
+                email = request.POST.get('email')
+                mobileNumber = request.POST.get('mobileNumber')
 
-
-# @csrf_exempt
-# @require_POST
-# def register_candidate(request):
-#     if request.method == 'POST':
-#         try:
-
-#             data = json.loads(request.body)
-#             fullName = data.get('fullName')
-#             degree = data.get('degree')
-#             email = data.get('email')
-#             mobileNumber = data.get('mobileNumber')
-
-#             candidate = User.objects.create(
-#                 fullName=fullName,
-#                 degree=degree,
-#                 email=email,
-#                 mobileNumber=mobileNumber,
-#                 role='candidate'
-#             )
-#             if request.FILES.get('file'):
-#                 file = request.FILES['file']
-#                 timestamp = int(datetime.now().timestamp())
-#                 filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
-#                 path = default_storage.save(f'public/files/{filename}', file)
-#                 cv_url = default_storage.url(path)
-#                 image = User(cv_url=cv_url)
-#                 candidate.save()
-
-#             return JsonResponse({'message': 'Profile submitted successfully'})
-#         except Exception as e:
-#             return JsonResponse({'error': str(e)})
-#     else:
-#         return JsonResponse({'error': 'Only POST requests are allowed'})
-
+                user = User.objects.create(
+                    fullName=fullName,
+                    degree=degree,
+                    email=email,
+                    mobileNumber=mobileNumber,
+                    role='candidate',
+                    cv_url=filename
+                )
+                complete_cv_url = request.build_absolute_uri(cv_url)
+                
+                return JsonResponse({'success': 'Candidate registered successfully', 'cv_url': complete_cv_url})
+            else:
+                return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
+        else:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': 'An error occurred during registration'}, status=500)
 
 @require_GET
 def get_candidate_profile(request):
-    if request.method=='GET':
+    if request.method == 'GET':
         try:
-            candidates=User.objects.filter(role='candidate')
+            candidates = User.objects.filter(role='candidate')
             if not candidates:
-                return JsonResponse({'message': 'candidates not found'})
+                return JsonResponse({'message': 'Candidates not found'})
+            
             candidate_data = []
             for candidate in candidates:
-                candidate_data.append({
+              filename = candidate.cv_url
+              file_path = f'public/files/{filename}'
+              candidate_data.append({
                     'fullName': candidate.fullName,
                     'degree': candidate.degree,
                     'email': candidate.email,
                     'mobileNumber': candidate.mobileNumber,
-                    'active':candidate.active,
-                    'cv_url': candidate.cv_url
+                    'active': candidate.active,
+                    'cv_url': file_path
                 })
-                return JsonResponse({'candidates': candidate_data})
+            
+            return JsonResponse({'candidates': candidate_data})
         except Exception as e:
             return JsonResponse({'error': str(e)})
-        else:
-            return JsonResponse({'error': 'Only GET requests are allowed'})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})
                     
 
 @csrf_exempt
@@ -269,24 +257,41 @@ def update_password_with_otp(request):
     
 
 @csrf_exempt
-# @jwt_auth_required
 def upload_cv(request):
     if request.method == 'POST':
         try:
-            if request.FILES.get('file'):
+            candidate_id = request.GET.get('candidate_id')
+
+            print("Candidate ID:", candidate_id)
+
+            if 'file' in request.FILES:
                 file = request.FILES['file']
-                timestamp = int(datetime.now().timestamp())
-                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
-                path = default_storage.save(f'public/files/{filename}', file)
-                cv_url = default_storage.url(path)
-                image = User(cv_url=cv_url)
-                image.save()
-                return JsonResponse({'success': 'Image uploaded', 'image_url': cv_url})
+                if file and allowed_file(file.name):
+                    timestamp = int(datetime.now().timestamp())
+                    filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                    path = default_storage.save(f'public/files/{filename}', file)
+                    cv_url = default_storage.url(path)
+                    user = User.objects.get(id=candidate_id)
+                    user.cv_url=filename
+                    user.save()
+                    return JsonResponse({'success': 'File uploaded', 'file_url': cv_url})
+                else:
+                    return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
             else:
                 return JsonResponse({'error': 'No file uploaded'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': 'An error occurred during uploading the image'}, status=500)
-    
+            return JsonResponse({'error': 'An error occurred during uploading the file'}, status=500)
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+
+@require_GET
+def show_cv(request, filename):
+    file_path = f'public/files/{filename}'
+    file = default_storage.open(file_path, 'rb')
+    mime_type, _ = mimetypes.guess_type(file_path)
+    response = HttpResponse(file, content_type=mime_type)
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
     
 @csrf_exempt
 @require_POST

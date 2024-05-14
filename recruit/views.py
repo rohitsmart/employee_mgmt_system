@@ -84,8 +84,10 @@ def get_questions(request):         #this api will get the random question and s
     if request.method == 'GET':
         try:
             candidate_id = request.GET.get('id')
-            if not candidate_id:
-                return JsonResponse({"error": "Candidate ID is required"})
+            scheduler_id=request.GET.get('scheduler_id')
+            isScheduledExam=Scheduler.objects.filter(id=scheduler_id,candidate_id=candidate_id,status='pending').exists()
+            if not isScheduledExam:
+                return JsonResponse({"error": "Exam is not scheduled yet or already attempted"})
 
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
@@ -126,7 +128,8 @@ def get_questions(request):         #this api will get the random question and s
  
 @require_POST
 @csrf_exempt
-def save_answer(request):  # In this we are saving the answer by the candidate
+def save_answer(request):
+    
     if request.method == 'POST':
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
@@ -175,6 +178,9 @@ def save_answer(request):  # In this we are saving the answer by the candidate
                             scheduler_id=scheduler_id                   
                         )
                         exam.save()
+                        isScheduled=Scheduler.objects.get(id=scheduler_id)
+                        isScheduled.status='attempted'
+                        isScheduled.save()
                     return JsonResponse({'message': 'answer submitted successfully'})
                 else:
                     return JsonResponse({'message': 'question not found'})  
@@ -202,12 +208,7 @@ def clear_answer(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only DELETE requests are allowed for answering the question'})    
-    
-        
-        
-        
-     
-        
+           
 
 @require_POST
 @csrf_exempt
@@ -299,19 +300,23 @@ def candidate_scheduler(request):          #need to updte this for the authoriza
             scheduledDate= data.get('scheduledDate')
             round=data.get('round')
             candidate_id=data.get('candidate_id')
+           # exam_id=data.get('exam_id')
+
             scheduler = Scheduler.objects.create(          
                 scheduledDate=scheduledDate,
                 round=round,
-                candidate_id=candidate_id
-            )
-            scheduler.save()
-            scheduler.status='started'
+                candidate_id=candidate_id,
+                #examId=exam_id,
+                status='pending'
+             )
             scheduler.save()
             return JsonResponse({'message':'exam scheduled successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only post method'})
+
+
 
 @require_http_methods(['PUT'])             
 @csrf_exempt
@@ -324,12 +329,14 @@ def update_candidate_scheduler(request):
             if not candidate_id:
                 return JsonResponse({'message':'sscheduler not found for the candidate'})
             data = json.loads(request.body)
-            # candidate_id=data.get('candidate_id')
             scheduledDate=data.get('scheduledDate')
+            status=data.get('status')
             round=data.get('round')
-            scheduler = Scheduler.objects.get(id=candidate_id)
+
+            scheduler = Scheduler.objects.filter(candidate_id=candidate_id)
             scheduler.scheduledDate=scheduledDate
             scheduler.round=round
+            scheduler.status=status
             scheduler.save()
             return JsonResponse({'message':'exam schedule updated successfully'})
         except Exception as e:
@@ -339,21 +346,32 @@ def update_candidate_scheduler(request):
  
 @require_GET
 @csrf_exempt
-@jwt_auth_required
-def fetch_my_scheduler(request):          #this can be done by the candidate
-    if request.method=='GET':
-        try:
-            candidate_id=request.GET.get('id')
-            if not candidate_id:
-                return JsonResponse({'message':'schedule not found for the candidate'})
-            scheduler = Scheduler.objects.get(id=candidate_id)
-            return JsonResponse({'scheduledDate':scheduler.scheduledDate,
-                                 'round':scheduler.round})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'message':'only get method allows'})       
- 
+#@jwt_auth_required
+def fetch_my_scheduler(request):  # This can be done by the candidate
+    try:
+        candidate_id = request.GET.get('id')
+        if not candidate_id:
+            return JsonResponse({'message': 'Candidate ID is required'}, status=400)
+
+        schedulers = Scheduler.objects.filter(candidate_id=candidate_id)
+        if not schedulers.exists():
+            return JsonResponse({'message': 'No schedules found for the candidate'}, status=404)
+
+        response_data = []
+        for scheduler in schedulers:
+            response_data.append({
+                'schedulerId': scheduler.id,
+                'scheduledDate': scheduler.scheduledDate,
+                'round': scheduler.get_round_display(),
+                'status': scheduler.get_status_display(),
+            })
+
+        return JsonResponse({'schedules': response_data})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+      
+
 @require_GET
 def track(request):
     if request.method=='GET':

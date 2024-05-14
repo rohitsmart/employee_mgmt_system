@@ -18,11 +18,27 @@ class EmpRole(models.Model):
 class Stream(models.Model):
     id=models.AutoField(primary_key=True)
     streamName=models.CharField(max_length=100, unique=True)
+
+class Scheduler(models.Model):
+    id = models.AutoField(primary_key=True)
+    candidate = models.ForeignKey(User, on_delete=models.CASCADE)
+    scheduledDate = models.DateField()
+    STATUSES = (
+        ('pending', 'pending'),
+        ('attempted', 'attempted'),
+
+    )
+    status = models.CharField(max_length=15, choices=STATUSES)
+    ROUNDS = (
+        (1, 'Round 1'),
+        (2, 'Round 2'),
+    )
+    round = models.IntegerField(choices=ROUNDS)
     
 class Questions(models.Model):
-    id=models.AutoField(primary_key=True)
-    question_id=models.IntegerField(null=True)
-    correctResponse=models.CharField(max_length=50, null=True)
+    id = models.AutoField(primary_key=True)
+    question_id = models.IntegerField(null=True)
+    correctResponse = models.CharField(max_length=50, null=True)
     TYPE_CHOICES = (
         ('mcq', 'Multiple Choice Question'),
         ('subjective', 'Subjective Question'),
@@ -33,9 +49,10 @@ class Questions(models.Model):
         (2, 'Level 2'),
         (3, 'Level 3'),
     )
-    level = models.IntegerField(choices=LEVEL_CHOICES,null=True)
-    stream =models.ForeignKey(Stream, on_delete=models.CASCADE, null=True)
+    level = models.IntegerField(choices=LEVEL_CHOICES, null=True)
+    stream = models.ForeignKey('Stream', on_delete=models.CASCADE, null=True)
     candidate = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
+    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE,default=1)     
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
@@ -46,24 +63,6 @@ class Track(models.Model):
     round3=models.CharField(max_length=100)
     round4=models.CharField(max_length=100)
     
-class Scheduler(models.Model):
-    id=models.AutoField(primary_key=True)
-    candidate=models.ForeignKey(User, on_delete=models.CASCADE)
-    scheduledDate=models.DateField()
-    STATUSES = (
-        (1,'started'),
-        (2,'completed'),
-        (3,'todo'),
-        (4,'inprogress'),
-        (5,'disqualified'),
-        ) 
-    status = models.TextField(choices=STATUSES)
-    ROUNDS = (
-         (1, 'Round 1'),
-         (2, 'Round 2'),
-    )
-    round = models.IntegerField(choices=ROUNDS)
-      
     
 class Result(models.Model):
     id=models.AutoField(primary_key=True)
@@ -83,7 +82,6 @@ class Result(models.Model):
         
 class Exam(models.Model):
     candidate = models.ForeignKey(User, on_delete=models.CASCADE)
-    # question = models.ForeignKey(Questions, on_delete=models.CASCADE)
     question_id=models.IntegerField(null=True)
     candidateResponse = models.CharField(max_length=255)
     correctResponse = models.CharField(max_length=255)
@@ -94,7 +92,7 @@ class Exam(models.Model):
     )
     round = models.IntegerField(choices=ROUNDS, null=True)
     status = models.CharField(max_length=50, null=True)
-    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)   #for currently i am ignoring the schedulerid    
+    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)    
 
 class AuthorizationToEmployee(models.Model):
     emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
@@ -157,8 +155,3 @@ class AuthorizeToModule(models.Model):
     id = models.AutoField(primary_key=True)
     employee=models.ForeignKey(User,on_delete=models.CASCADE, null=True)
     module=models.ForeignKey(EmpModule, on_delete=models.CASCADE)           
-
-             
-        
-
-# Create your models here.
