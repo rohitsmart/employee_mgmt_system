@@ -80,33 +80,50 @@ def fetch_stream(request):
         return JsonResponse({'error': 'Only GET requests are allowed'})
 
 @require_GET
-def get_questions(request):         #this api will get the random question and save the record on the database 
+def get_questions(request):  # This API will get the random question and save the record on the database
     if request.method == 'GET':
         try:
+            questions_data = []
+
             candidate_id = request.GET.get('id')
-            scheduler_id=request.GET.get('scheduler_id')
-            isScheduledExam=Scheduler.objects.filter(id=scheduler_id,candidate_id=candidate_id,status='pending').exists()
+            scheduler_id = request.GET.get('scheduler_id')
+            isScheduledExam = Scheduler.objects.filter(id=scheduler_id, candidate_id=candidate_id, status='pending').exists()
             if not isScheduledExam:
                 return JsonResponse({"error": "Exam is not scheduled yet or already attempted"})
-            getQuestions = Questions.objects.filter(scheduler_id=scheduler_id)
-            if getQuestions.exists():
-                    getQuestions.delete()
             getExams = Exam.objects.filter(scheduler_id=scheduler_id)
             if getExams.exists():
-                    getExams.delete()
-            print(scheduler_id)
+                getExams.delete()
+                
             getResults = Result.objects.filter(scheduler_id=scheduler_id)
-            print(getResults)
             if getResults.exists():
-                       getResults.delete()
-                     
+                getResults.delete()
+
+            getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+            if getQuestions.exists():
+                for question in getQuestions:
+                    question_data = {
+                        'id': question.question_id,
+                        'question': question.question,
+                        'option1': question.option1,
+                        'option2': question.option2,
+                        'option3': question.option3,
+                        'option4': question.option4,
+                        'type': question.type,
+                        'level': question.level,
+                        'stream_id': question.stream.id, 
+                    }
+                    questions_data.append(question_data)
+                return JsonResponse({"questions": questions_data})
+      
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
                 questions_data = json.load(file)
+                
             stream_id = request.GET.get('stream_id') 
             total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
             if len(total_questions) < 5:
                 return JsonResponse({"message": "Questions are less than requirement"})
+            
             questions = random.sample(total_questions, 5)
             all_questions = []
             for question in questions:
@@ -123,11 +140,18 @@ def get_questions(request):         #this api will get the random question and s
                 }
                 all_questions.append(all_question)
 
-            # Save questions attempted by the candidate
-            for question in questions:
+            for question in questions: 
                 Questions.objects.create(
                     candidate_id=candidate_id,
                     question_id=question["id"],
+                    question=question["question"],
+                    option1=question["option1"],
+                    option2=question["option2"],
+                    option3=question["option3"],
+                    option4=question["option4"],
+                    type=question["type"],
+                    level=question["level"],
+                    stream_id=question["stream_id"],
                     correctResponse=question["correctAnswer"]
                 )
             
@@ -136,6 +160,7 @@ def get_questions(request):         #this api will get the random question and s
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+
  
 @require_POST
 @csrf_exempt
@@ -258,6 +283,9 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                 updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
                 updatedScheduledExam.status = 'attempted'
                 updatedScheduledExam.save()
+                getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+                if getQuestions.exists():
+                            getQuestions.delete()
                 return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam'})          
             
             else:
@@ -273,6 +301,9 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                 updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
                 updatedScheduledExam.status = 'attempted'
                 updatedScheduledExam.save()
+                getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+                if getQuestions.exists():
+                            getQuestions.delete()
                 return JsonResponse({'total_marks':total_marks,'message': 'candidate failed the exam'})
         except Exception as e:
             return JsonResponse({'error': str(e)})

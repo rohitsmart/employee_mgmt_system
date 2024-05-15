@@ -38,6 +38,11 @@ class Scheduler(models.Model):
 class Questions(models.Model):
     id = models.AutoField(primary_key=True)
     question_id = models.IntegerField(null=True)
+    question = models.CharField(max_length=512, null=True)
+    option1 = models.CharField(max_length=100, null=True)
+    option2 = models.CharField(max_length=100, null=True)
+    option3 = models.CharField(max_length=100, null=True)
+    option4 = models.CharField(max_length=100, null=True)
     correctResponse = models.CharField(max_length=50, null=True)
     TYPE_CHOICES = (
         ('mcq', 'Multiple Choice Question'),
