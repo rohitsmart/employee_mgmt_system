@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 # from .decorators import role_required
-from assign.decorators import role_required
+from users.decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule
 from users.serializers import UserSerializer
@@ -293,7 +293,8 @@ def show_cv(request, filename):
     
 @csrf_exempt
 @require_POST
-# @role_required('admin')
+@jwt_auth_required
+@role_required('admin')
 def create_empmodule(request):
         if request.method == 'POST':
             try:
@@ -313,15 +314,16 @@ def create_empmodule(request):
         
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+#@role_required('admin')
+@jwt_auth_required
 def update_empModule(request):
     if request.method=='PUT':
         try:
-            module_id=request.get('id')
-            if module_id:
+            module_id=request.GET.get('id')
+            if not module_id:
                 return JsonResponse({'message':'module not found'})
             data=json.loads(request.body)
-            empModule=EmpModule.objects.get(id=module_id)
+            empModule=EmpModule.objects.get(id=11)
             empModule.moduleName=data.get('moduleName')
             empModule.moduleKey=data.get('moduleKey')
             empModule.save()
@@ -332,7 +334,7 @@ def update_empModule(request):
         return JsonResponse({'error': 'Only PUT requests are allowed'})
     
 @require_GET
-# @role_required('admin')
+@role_required('admin')
 def get_empModule(request):
     if request.method=='GET':
         try:
@@ -350,7 +352,7 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-# @role_required('admin')          #this  role_required is not working so i need to fix this  
+@role_required('admin')          #this  role_required is not working so i need to fix this  
 @jwt_auth_required                                     
 def authorization_to_module(request):
     if request.method=='POST':
@@ -368,7 +370,7 @@ def authorization_to_module(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+@role_required('admin')
 def update_authorization_to_module(request):
     if request.method=='PUT':
         try:
@@ -388,7 +390,7 @@ def update_authorization_to_module(request):
     
 @csrf_exempt
 @require_POST
-# @role_required('admin')
+@role_required('admin')
 def authorize_to_employee(request):
     if request.method == 'POST':
         try:
@@ -405,7 +407,7 @@ def authorize_to_employee(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+@role_required('admin')
 def update_authorization_to_employee(request):
     if request.method == 'PUT':
         try:

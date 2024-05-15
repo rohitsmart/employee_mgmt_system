@@ -9,7 +9,10 @@ from project.models import Project
 from module.models import Module
 from recruit.models import AuthorizeToModule
 from task.models import Task
-from .decorators import jwt_auth_required,role_required
+from .decorators import jwt_auth_required
+from users.decorators import role_required
+
+
 @csrf_exempt
 @require_POST
 @jwt_auth_required
@@ -84,7 +87,7 @@ def unassign_task(request):          #this api also only accessed by the tl or p
 @csrf_exempt
 @require_http_methods(['PUT'])
 @jwt_auth_required
-def update_assignTask(request):          # this api also only accessed by the tl or pm or admin
+def update_assignTask(request):          
     if request.method == 'PUT':
         try:
             user = request.user_id
@@ -96,7 +99,6 @@ def update_assignTask(request):          # this api also only accessed by the tl
             data = json.loads(request.body)
             assign = Assign.objects.get(id=assign_id)
             assign.assigned_to= data.get('assigned_to')
-            # assign.assigned_by = data.get('assigned_by')    #here the assign_by name may not be updated 
             assign.assign_date = data.get('assign_date')
             assign.deadline = data.get('deadline')
             assign.status = data.get('status')
