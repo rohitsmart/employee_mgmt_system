@@ -88,7 +88,18 @@ def get_questions(request):         #this api will get the random question and s
             isScheduledExam=Scheduler.objects.filter(id=scheduler_id,candidate_id=candidate_id,status='pending').exists()
             if not isScheduledExam:
                 return JsonResponse({"error": "Exam is not scheduled yet or already attempted"})
-
+            getQuestions = Questions.objects.filter(scheduler_id=scheduler_id)
+            if getQuestions.exists():
+                    getQuestions.delete()
+            getExams = Exam.objects.filter(scheduler_id=scheduler_id)
+            if getExams.exists():
+                    getExams.delete()
+            print(scheduler_id)
+            getResults = Result.objects.filter(scheduler_id=scheduler_id)
+            print(getResults)
+            if getResults.exists():
+                       getResults.delete()
+                     
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
                 questions_data = json.load(file)
@@ -119,9 +130,7 @@ def get_questions(request):         #this api will get the random question and s
                     question_id=question["id"],
                     correctResponse=question["correctAnswer"]
                 )
-            updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
-            updatedScheduledExam.status = 'attempted'
-            updatedScheduledExam.save()
+            
             return JsonResponse({"questions": all_questions})
         except Exception as e:
             return JsonResponse({'error': str(e)})
@@ -246,6 +255,9 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                     round1="Cleared"
                 )
                 track.save()
+                updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
+                updatedScheduledExam.status = 'attempted'
+                updatedScheduledExam.save()
                 return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam'})          
             
             else:
@@ -258,6 +270,9 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                     round1="failed"
                 )
                 track.save()
+                updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
+                updatedScheduledExam.status = 'attempted'
+                updatedScheduledExam.save()
                 return JsonResponse({'total_marks':total_marks,'message': 'candidate failed the exam'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
