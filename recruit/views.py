@@ -225,7 +225,6 @@ def save_answer(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
 
-
 @require_http_methods(['DELETE'])
 @csrf_exempt
 def clear_answer(request):
@@ -244,8 +243,7 @@ def clear_answer(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only DELETE requests are allowed for answering the question'})    
-           
-
+    
 @require_POST
 @csrf_exempt
 def submit_exam(request):               #candidate will get only 5 questions according to that result will bw calculated
@@ -449,10 +447,11 @@ def track(request):
 def create_job(request): 
     try:
         user =request.user_id
+
         data = json.loads(request.body)
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists()
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
         if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to add device'})
+            return JsonResponse({'error': 'you are not authorized to create job'})
         Job.objects.create(   
                 status=data.get('status'),       
                 jobName=data.get('jobName'),
@@ -495,27 +494,23 @@ def fetch_job(request):
 @jwt_auth_required
 def edit_job(request):
     try:
+        user= request.user_id
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
+        if not authorizeToModule:
+            return JsonResponse({'error': 'you are not authorized to filter the profile'})
         data = json.loads(request.body)
-        jobId = request.GET.get('jobId') 
-        userId =request.user_id
-        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
-
-        if is_emp_exists:
-            job = Job.objects.get(pk=jobId)
-            
-            job.status = data.get('status')
-            job.jobName = data.get('jobName')
-            job.jobDescription = data.get('jobDescription')
-            job.jobSkills = data.get('jobSkills')
-            job.experience = data.get('experience')
-            job.expire = data.get('expire')
-            job.save()
-            
-            return JsonResponse({'message': 'Job updated successfully'})
-        else:
-            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
-    except Job.DoesNotExist:
-        return JsonResponse({'error': 'Job not found'}, status=404)
+        jobId = request.GET.get('jobId')
+        if not jobId:
+            return JsonResponse({'error': 'Job ID is required'}, status=400)  
+        job=Job.objects.get(id=jobId)
+        job.status = data.get('status')
+        job.jobName = data.get('jobName')
+        job.jobDescription = data.get('jobDescription')
+        job.jobSkills = data.get('jobSkills')
+        job.experience = data.get('experience')
+        job.expire = data.get('expire')
+        job.save()
+        return JsonResponse({'message': 'Job updated successfully'})
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
@@ -524,14 +519,13 @@ def edit_job(request):
 @require_http_methods(["DELETE"])
 def delete_job(request):
     try:
-        userId =request.user_id
-        jobId = request.GET.get('jobId')  
-        is_emp_exists = User.objects.filter(id=userId, role='employee').exists()  
+        user= request.user_id
+        jobId = request.GET.get('jobId') 
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
+        if not authorizeToModule:
+            return JsonResponse({'error': 'you are not authorized to filter the profile'}) 
 
-        if not is_emp_exists:
-            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
-
-        job = Job.objects.get(pk=jobId)
+        job = Job.objects.get(id=jobId)
         job.delete()
         
         return JsonResponse({'message': 'Job deleted successfully'})
@@ -545,12 +539,10 @@ def delete_job(request):
 @jwt_auth_required
 def accept_reject(request):
     try:
-        user_id = request.user_id
-        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
-        
-        if not is_emp_exists:
-            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
-
+        user= request.user_id
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
+        if not authorizeToModule:
+            return JsonResponse({'error': 'you are not authorized to filter the profile'})
         applied_jobs = ApplyJob.objects.filter(status='Active')
         for job in applied_jobs:
             find_job = Job.objects.get(id=job.jobID)
@@ -576,13 +568,13 @@ def accept_reject(request):
 
 
 @jwt_auth_required
+@require_GET
 def filter_profile(request):
     try:
-        user_id = request.user_id
-        is_emp_exists = User.objects.filter(id=user_id, role='employee').exists()
-        
-        if not is_emp_exists:
-            return JsonResponse({'error': 'Employee with the given ID does not exist or is not an employee'}, status=400)
+        user= request.user_id
+        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
+        if not authorizeToModule:
+            return JsonResponse({'error': 'you are not authorized to filter the profile'})
 
         applied_jobs = ApplyJob.objects.filter(status='Active').values()  # Convert queryset to list of dictionaries
         

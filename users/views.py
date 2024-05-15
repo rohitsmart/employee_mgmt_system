@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 # from .decorators import role_required
+from assign.decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule
 from users.serializers import UserSerializer
@@ -26,7 +27,6 @@ import uuid
 from django.http import HttpResponse
 from django.core.files.storage import default_storage
 import mimetypes
-
 
 @csrf_exempt
 def signup(request):
@@ -66,7 +66,8 @@ def signup(request):
                 response_data = {
                     'message': 'User signed up successfully',
                     'email': email,
-                    'password': password
+                    'password': password,
+                    'emp_id':emp_id
                 }
                 return JsonResponse(response_data, status=201)
             except IntegrityError as e:
@@ -115,6 +116,7 @@ def register_candidate(request):
             return JsonResponse({'error': 'No file uploaded'}, status=400)
     except Exception as e:
         return JsonResponse({'error': 'An error occurred during registration'}, status=500)
+      
 
 @require_GET
 def get_candidate_profile(request):
@@ -143,7 +145,6 @@ def get_candidate_profile(request):
     else:
         return JsonResponse({'error': 'Only GET requests are allowed'})
                     
-
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
@@ -176,7 +177,6 @@ def login(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-
 @csrf_exempt
 @require_POST
 @jwt_auth_required
@@ -190,7 +190,6 @@ def logout(request):
             return JsonResponse({'error': 'Token does not exist'}, status=400)  
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -215,7 +214,6 @@ def update_password(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -295,6 +293,7 @@ def show_cv(request, filename):
     
 @csrf_exempt
 @require_POST
+# @role_required('admin')
 def create_empmodule(request):
         if request.method == 'POST':
             try:
@@ -314,6 +313,7 @@ def create_empmodule(request):
         
 @csrf_exempt
 @require_http_methods(['PUT'])
+# @role_required('admin')
 def update_empModule(request):
     if request.method=='PUT':
         try:
@@ -332,6 +332,7 @@ def update_empModule(request):
         return JsonResponse({'error': 'Only PUT requests are allowed'})
     
 @require_GET
+# @role_required('admin')
 def get_empModule(request):
     if request.method=='GET':
         try:
@@ -349,7 +350,8 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-# @role_required('admin')          #this  role_required is not working so i need to fix this                                       
+# @role_required('admin')          #this  role_required is not working so i need to fix this  
+@jwt_auth_required                                     
 def authorization_to_module(request):
     if request.method=='POST':
         try:
@@ -357,7 +359,7 @@ def authorization_to_module(request):
             employee_id=data.get('employee_id')
             module_id=data.get('module_id')
             authorizeToModule=AuthorizeToModule.objects.create(employee_id=employee_id, module_id=module_id)
-            authorizeToModule.save()           
+            authorizeToModule.save() 
             return JsonResponse({'success': 'employee authorized successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
