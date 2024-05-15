@@ -250,6 +250,7 @@ def upload_cv(request):
     
 @csrf_exempt
 @require_POST
+# @role_required('admin')
 def create_empmodule(request):
         if request.method == 'POST':
             try:
@@ -269,6 +270,7 @@ def create_empmodule(request):
         
 @csrf_exempt
 @require_http_methods(['PUT'])
+# @role_required('admin')
 def update_empModule(request):
     if request.method=='PUT':
         try:
@@ -287,6 +289,7 @@ def update_empModule(request):
         return JsonResponse({'error': 'Only PUT requests are allowed'})
     
 @require_GET
+# @role_required('admin')
 def get_empModule(request):
     if request.method=='GET':
         try:
