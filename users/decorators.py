@@ -6,18 +6,16 @@ def role_required(role):
     def decorator(view_func):
         @wraps(view_func)
         def _wrapped_view(request, *args, **kwargs):
-            user_id = request.user_id 
-            
             try:
-                # Check if a user with the provided user_id and role exists
-                is_candidate_exist = User.objects.filter(id=user_id, role=role).exists()
-                if not is_candidate_exist:
+                user = request.user  # Assuming you have a way to get the authenticated user
+                if user is None or not User.objects.filter(id=user, role=role).exists():
                     return JsonResponse({'error': 'You do not have permission to access this resource.'}, status=403)
             except Exception as e:
                 return JsonResponse({'error': str(e)}, status=500)
             return view_func(request, *args, **kwargs)
         return _wrapped_view
     return decorator
+
 
 def jwt_auth_required(view_func):
     @wraps(view_func)
