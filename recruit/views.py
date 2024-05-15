@@ -119,7 +119,9 @@ def get_questions(request):         #this api will get the random question and s
                     question_id=question["id"],
                     correctResponse=question["correctAnswer"]
                 )
-
+            updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
+            updatedScheduledExam.status = 'attempted'
+            updatedScheduledExam.save()
             return JsonResponse({"questions": all_questions})
         except Exception as e:
             return JsonResponse({'error': str(e)})
