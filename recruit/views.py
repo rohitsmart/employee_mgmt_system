@@ -80,20 +80,50 @@ def fetch_stream(request):
         return JsonResponse({'error': 'Only GET requests are allowed'})
 
 @require_GET
-def get_questions(request):         #this api will get the random question and save the record on the database 
+def get_questions(request):  # This API will get the random question and save the record on the database
     if request.method == 'GET':
         try:
-            candidate_id = request.GET.get('id')
-            if not candidate_id:
-                return JsonResponse({"error": "Candidate ID is required"})
+            questions_data = []
 
+            candidate_id = request.GET.get('id')
+            scheduler_id = request.GET.get('scheduler_id')
+            isScheduledExam = Scheduler.objects.filter(id=scheduler_id, candidate_id=candidate_id, status='pending').exists()
+            if not isScheduledExam:
+                return JsonResponse({"error": "Exam is not scheduled yet or already attempted"})
+            getExams = Exam.objects.filter(scheduler_id=scheduler_id)
+            if getExams.exists():
+                getExams.delete()
+                
+            getResults = Result.objects.filter(scheduler_id=scheduler_id)
+            if getResults.exists():
+                getResults.delete()
+
+            getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+            if getQuestions.exists():
+                for question in getQuestions:
+                    question_data = {
+                        'id': question.question_id,
+                        'question': question.question,
+                        'option1': question.option1,
+                        'option2': question.option2,
+                        'option3': question.option3,
+                        'option4': question.option4,
+                        'type': question.type,
+                        'level': question.level,
+                        'stream_id': question.stream.id, 
+                    }
+                    questions_data.append(question_data)
+                return JsonResponse({"questions": questions_data})
+      
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
             with open(json_file_path, 'r') as file:
                 questions_data = json.load(file)
+                
             stream_id = request.GET.get('stream_id') 
             total_questions = [question for question in questions_data if question.get('stream_id') == int(stream_id)]
             if len(total_questions) < 5:
                 return JsonResponse({"message": "Questions are less than requirement"})
+            
             questions = random.sample(total_questions, 5)
             all_questions = []
             for question in questions:
@@ -110,23 +140,32 @@ def get_questions(request):         #this api will get the random question and s
                 }
                 all_questions.append(all_question)
 
-            # Save questions attempted by the candidate
-            for question in questions:
+            for question in questions: 
                 Questions.objects.create(
                     candidate_id=candidate_id,
                     question_id=question["id"],
+                    question=question["question"],
+                    option1=question["option1"],
+                    option2=question["option2"],
+                    option3=question["option3"],
+                    option4=question["option4"],
+                    type=question["type"],
+                    level=question["level"],
+                    stream_id=question["stream_id"],
                     correctResponse=question["correctAnswer"]
                 )
-
+            
             return JsonResponse({"questions": all_questions})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+
  
 @require_POST
 @csrf_exempt
-def save_answer(request):  # In this we are saving the answer by the candidate
+def save_answer(request):
+    
     if request.method == 'POST':
         try:
             json_file_path = os.path.join(settings.BASE_DIR, 'questions.json')
@@ -175,6 +214,9 @@ def save_answer(request):  # In this we are saving the answer by the candidate
                             scheduler_id=scheduler_id                   
                         )
                         exam.save()
+                        isScheduled=Scheduler.objects.get(id=scheduler_id)
+                        isScheduled.status='attempted'
+                        isScheduled.save()
                     return JsonResponse({'message': 'answer submitted successfully'})
                 else:
                     return JsonResponse({'message': 'question not found'})  
@@ -236,6 +278,12 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                     round1="Cleared"
                 )
                 track.save()
+                updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
+                updatedScheduledExam.status = 'attempted'
+                updatedScheduledExam.save()
+                getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+                if getQuestions.exists():
+                            getQuestions.delete()
                 return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam'})          
             
             else:
@@ -248,6 +296,12 @@ def submit_exam(request):               #candidate will get only 5 questions acc
                     round1="failed"
                 )
                 track.save()
+                updatedScheduledExam = Scheduler.objects.get(id=scheduler_id, candidate_id=candidate_id)
+                updatedScheduledExam.status = 'attempted'
+                updatedScheduledExam.save()
+                getQuestions = Questions.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
+                if getQuestions.exists():
+                            getQuestions.delete()
                 return JsonResponse({'total_marks':total_marks,'message': 'candidate failed the exam'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
@@ -292,19 +346,23 @@ def candidate_scheduler(request):          #need to updte this for the authoriza
             scheduledDate= data.get('scheduledDate')
             round=data.get('round')
             candidate_id=data.get('candidate_id')
+           # exam_id=data.get('exam_id')
+
             scheduler = Scheduler.objects.create(          
                 scheduledDate=scheduledDate,
                 round=round,
-                candidate_id=candidate_id
-            )
-            scheduler.save()
-            scheduler.status='started'
+                candidate_id=candidate_id,
+                #examId=exam_id,
+                status='pending'
+             )
             scheduler.save()
             return JsonResponse({'message':'exam scheduled successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'message':'only post method'})
+
+
 
 @require_http_methods(['PUT'])             
 @csrf_exempt
@@ -317,12 +375,14 @@ def update_candidate_scheduler(request):
             if not candidate_id:
                 return JsonResponse({'message':'sscheduler not found for the candidate'})
             data = json.loads(request.body)
-            # candidate_id=data.get('candidate_id')
             scheduledDate=data.get('scheduledDate')
+            status=data.get('status')
             round=data.get('round')
-            scheduler = Scheduler.objects.get(id=candidate_id)
+
+            scheduler = Scheduler.objects.filter(candidate_id=candidate_id)
             scheduler.scheduledDate=scheduledDate
             scheduler.round=round
+            scheduler.status=status
             scheduler.save()
             return JsonResponse({'message':'exam schedule updated successfully'})
         except Exception as e:
@@ -332,21 +392,32 @@ def update_candidate_scheduler(request):
  
 @require_GET
 @csrf_exempt
-@jwt_auth_required
-def fetch_my_scheduler(request):          #this can be done by the candidate
-    if request.method=='GET':
-        try:
-            candidate_id=request.GET.get('id')
-            if not candidate_id:
-                return JsonResponse({'message':'schedule not found for the candidate'})
-            scheduler = Scheduler.objects.get(id=candidate_id)
-            return JsonResponse({'scheduledDate':scheduler.scheduledDate,
-                                 'round':scheduler.round})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
-    else:
-        return JsonResponse({'message':'only get method allows'})       
- 
+#@jwt_auth_required
+def fetch_my_scheduler(request):  # This can be done by the candidate
+    try:
+        candidate_id = request.GET.get('id')
+        if not candidate_id:
+            return JsonResponse({'message': 'Candidate ID is required'}, status=400)
+
+        schedulers = Scheduler.objects.filter(candidate_id=candidate_id)
+        if not schedulers.exists():
+            return JsonResponse({'message': 'No schedules found for the candidate'}, status=404)
+
+        response_data = []
+        for scheduler in schedulers:
+            response_data.append({
+                'schedulerId': scheduler.id,
+                'scheduledDate': scheduler.scheduledDate,
+                'round': scheduler.get_round_display(),
+                'status': scheduler.get_status_display(),
+            })
+
+        return JsonResponse({'schedules': response_data})
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+      
+
 @require_GET
 def track(request):
     if request.method=='GET':

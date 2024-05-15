@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv
+from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv,show_cv
 from users.views import signup,register_candidate,login
 from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
@@ -99,7 +99,8 @@ urlpatterns = [
     path('api/admin/users/update-authorization-to-module',update_authorization_to_module,name='update_authorization_to_module'),
     path('api/admin/users/authorization-to-employee',authorize_to_employee,name='authorization_to_employee'),
     path('api/admin/users/update-authorization-to-employee',update_authorization_to_employee,name='update_authorization_to_employee'),
-    path('api/users/upload-cv',upload_cv, name='upload_cv'),
+    path('api/users/upload_cv', upload_cv, name='upload_cv'),
+    path('public/files/<str:filename>', show_cv, name='show_cv'),
     path('api/sms', sms_api, name='sms_api'),
     path('api/users/candidate/get-candidate-profile', get_candidate_profile, name='get_candidate_profile'),
     path('api/users/candidate/clear-answer', clear_answer, name='clear_answer'),
