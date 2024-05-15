@@ -5,6 +5,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 # from .decorators import role_required
+from assign.decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule
 from users.serializers import UserSerializer
@@ -23,7 +24,6 @@ from django.views.decorators.csrf import csrf_exempt
 import random
 from django.core.cache import cache
 import uuid
-
 
 @csrf_exempt
 def signup(request):
@@ -63,7 +63,8 @@ def signup(request):
                 response_data = {
                     'message': 'User signed up successfully',
                     'email': email,
-                    'password': password
+                    'password': password,
+                    'emp_id':emp_id
                 }
                 return JsonResponse(response_data, status=201)
             except IntegrityError as e:
@@ -72,7 +73,6 @@ def signup(request):
             return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
-
 
 @csrf_exempt
 @require_POST
@@ -95,42 +95,6 @@ def register_candidate(request):
             return JsonResponse({'messge':'profile submitted successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
-
-
-# @csrf_exempt
-# @require_POST
-# def register_candidate(request):
-#     if request.method == 'POST':
-#         try:
-
-#             data = json.loads(request.body)
-#             fullName = data.get('fullName')
-#             degree = data.get('degree')
-#             email = data.get('email')
-#             mobileNumber = data.get('mobileNumber')
-
-#             candidate = User.objects.create(
-#                 fullName=fullName,
-#                 degree=degree,
-#                 email=email,
-#                 mobileNumber=mobileNumber,
-#                 role='candidate'
-#             )
-#             if request.FILES.get('file'):
-#                 file = request.FILES['file']
-#                 timestamp = int(datetime.now().timestamp())
-#                 filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
-#                 path = default_storage.save(f'public/files/{filename}', file)
-#                 cv_url = default_storage.url(path)
-#                 image = User(cv_url=cv_url)
-#                 candidate.save()
-
-#             return JsonResponse({'message': 'Profile submitted successfully'})
-#         except Exception as e:
-#             return JsonResponse({'error': str(e)})
-#     else:
-#         return JsonResponse({'error': 'Only POST requests are allowed'})
-
 
 @require_GET
 def get_candidate_profile(request):
@@ -155,7 +119,6 @@ def get_candidate_profile(request):
         else:
             return JsonResponse({'error': 'Only GET requests are allowed'})
                     
-
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
@@ -188,7 +151,6 @@ def login(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
-
 @csrf_exempt
 @require_POST
 @jwt_auth_required
@@ -202,7 +164,6 @@ def logout(request):
             return JsonResponse({'error': 'Token does not exist'}, status=400)  
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -227,7 +188,6 @@ def update_password(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
-
 
 @csrf_exempt
 @require_POST
@@ -344,7 +304,8 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-# @role_required('admin')          #this  role_required is not working so i need to fix this                                       
+# @role_required('admin')          #this  role_required is not working so i need to fix this  
+@jwt_auth_required                                     
 def authorization_to_module(request):
     if request.method=='POST':
         try:
@@ -352,7 +313,7 @@ def authorization_to_module(request):
             employee_id=data.get('employee_id')
             module_id=data.get('module_id')
             authorizeToModule=AuthorizeToModule.objects.create(employee_id=employee_id, module_id=module_id)
-            authorizeToModule.save()           
+            authorizeToModule.save() 
             return JsonResponse({'success': 'employee authorized successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)})
