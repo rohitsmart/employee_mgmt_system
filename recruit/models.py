@@ -37,27 +37,16 @@ class Scheduler(models.Model):
     
 class Questions(models.Model):
     id = models.AutoField(primary_key=True)
-    question_id = models.IntegerField(null=True)
     question = models.CharField(max_length=512, null=True)
     option1 = models.CharField(max_length=100, null=True)
     option2 = models.CharField(max_length=100, null=True)
     option3 = models.CharField(max_length=100, null=True)
     option4 = models.CharField(max_length=100, null=True)
     correctResponse = models.CharField(max_length=50, null=True)
-    TYPE_CHOICES = (
-        ('mcq', 'Multiple Choice Question'),
-        ('subjective', 'Subjective Question'),
-    )
-    type = models.CharField(max_length=50, choices=TYPE_CHOICES, null=True)
-    LEVEL_CHOICES = (
-        (1, 'Level 1'),
-        (2, 'Level 2'),
-        (3, 'Level 3'),
-    )
-    level = models.IntegerField(choices=LEVEL_CHOICES, null=True)
+    type = models.CharField(max_length=50,null=True)
+    level = models.IntegerField(null=True)
     stream = models.ForeignKey('Stream', on_delete=models.CASCADE, null=True)
-    candidate = models.ForeignKey(User, on_delete=models.CASCADE, null=True)
-    scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE,default=1)     
+        
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)
