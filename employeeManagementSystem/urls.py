@@ -15,9 +15,9 @@ from recruit.views import (clear_answer, create_stream, update_stream, delete_jo
                            create_job, fetch_job, edit_job, apply_for_job,
                            withdraw_job, fetch_notifications_by_user,
                            mark_notification_as_read, filter_profile, accept_reject,
-                           exam_result, get_questions, submit_exam, save_answer,
+                           exam_result, get_questions_ids, submit_exam, save_answer,
                            update_candidate_scheduler, fetch_my_scheduler, track,
-                           fetch_stream_with_questions, fetch_stream,
+                           fetch_stream_with_questions, fetch_stream,get_questions,
                            candidate_scheduler)
 
 from adminauth.views import create_user_credential,change_role,update_user,deactivate_user,delete_user,fetch_user,reset_user_passwrod
@@ -68,6 +68,7 @@ urlpatterns = [
     path('api/leave/delete_leave',delete_leave, name='delete_leave'), 
     path('api/recruit/create_stream',create_stream,name='create_stream'), 
     path('api/recruit/update_stream',update_stream,name='update_stream'),  
+    path('api/recruit/getQuestions_ids',get_questions_ids,name='get_questions_ids'),
     path('api/recruit/getQuestions',get_questions,name='get_questions'),    
     path('api/recruit/exam_result',exam_result,name='exam_result'),
     path('api/recruit/candidate/fetchResult',fetch_result,name='fetch_result'),
