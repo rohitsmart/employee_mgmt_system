@@ -33,7 +33,7 @@ def signup(request):
     if request.method == 'POST':
         data = json.loads(request.body)
 
-        if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
+        if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data and 'designation' in data:
             if data['role'] == 'employee':
                 try:
                     mobile_number = int(data['mobileNumber'])
@@ -52,7 +52,7 @@ def signup(request):
             password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
 
             try:
-                emp_id_record = EmpID.objects.create(emp_id=emp_id)
+                emp_id_record = EmpID.objects.create(emp_id=emp_id,designation=data['designation'])
                 User.objects.create(
                     emp=emp_id_record,
                     firstName=data['firstName'],
@@ -73,7 +73,7 @@ def signup(request):
             except IntegrityError as e:
                 return JsonResponse({'error': 'Email or mobile number already exists'}, status=400)
         else:
-            return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
+            return JsonResponse({'error': 'FirstName, lastName, Role, mobileNumber and Designation are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
@@ -314,7 +314,7 @@ def create_empmodule(request):
         
 @csrf_exempt
 @require_http_methods(['PUT'])
-#@role_required('admin')
+@role_required('admin')
 @jwt_auth_required
 def update_empModule(request):
     if request.method=='PUT':

@@ -35,6 +35,7 @@ class Scheduler(models.Model):
     )
     round = models.IntegerField(choices=ROUNDS)
     
+    
 class Questions(models.Model):
     id = models.AutoField(primary_key=True)
     question = models.CharField(max_length=512, null=True)
@@ -46,7 +47,7 @@ class Questions(models.Model):
     type = models.CharField(max_length=50,null=True)
     level = models.IntegerField(null=True)
     stream = models.ForeignKey('Stream', on_delete=models.CASCADE, null=True)
-        
+
     
 class Track(models.Model):
     id=models.AutoField(primary_key=True)

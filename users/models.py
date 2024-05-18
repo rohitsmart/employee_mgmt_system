@@ -6,6 +6,7 @@ from django.dispatch import receiver
 class EmpID(models.Model):
     id = models.AutoField(primary_key=True)
     emp_id = models.IntegerField(unique=True)
+    designation = models.CharField(max_length=100, null = True)
 
 class User(models.Model):
     id = models.AutoField(primary_key=True)

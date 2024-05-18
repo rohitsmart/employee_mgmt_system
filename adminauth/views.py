@@ -10,7 +10,7 @@ from project.decorators import jwt_auth_required
 from adminauth.models import UserCredential
 from users.models import User,EmpID
 from django.contrib.auth.hashers import make_password
-
+from users.decorators import role_required
 
 
 @require_POST
@@ -79,13 +79,17 @@ def generate_password():
 
 @require_POST
 @csrf_exempt
+@role_required('admin')
 @jwt_auth_required
 def change_role(request):
     try:
         if not User.objects.filter(id=request.user_id, role='admin').exists():
             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
         
-        user_id = request.GET.get('user_id')
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+        designation = data.get('designation')
+
         user = User.objects.get(id=user_id)
         
         if not user:
@@ -97,7 +101,7 @@ def change_role(request):
         last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
         last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
         emp_id = last_emp_id + 1
-        emp_id_record = EmpID.objects.create(emp_id=emp_id)
+        emp_id_record = EmpID.objects.create(emp_id=emp_id,designation=designation)
 
         user.role = 'employee'
         user.emp = emp_id_record
