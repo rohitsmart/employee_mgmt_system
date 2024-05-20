@@ -10,7 +10,7 @@ from project.decorators import jwt_auth_required
 from adminauth.models import UserCredential
 from users.models import User,EmpID
 from django.contrib.auth.hashers import make_password
-
+from users.decorators import role_required
 
 
 @require_POST
@@ -79,13 +79,17 @@ def generate_password():
 
 @require_POST
 @csrf_exempt
+@role_required('admin')
 @jwt_auth_required
 def change_role(request):
     try:
         if not User.objects.filter(id=request.user_id, role='admin').exists():
             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
         
-        user_id = request.GET.get('user_id')
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+        designation = data.get('designation')
+
         user = User.objects.get(id=user_id)
         
         if not user:
@@ -97,7 +101,7 @@ def change_role(request):
         last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
         last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
         emp_id = last_emp_id + 1
-        emp_id_record = EmpID.objects.create(emp_id=emp_id)
+        emp_id_record = EmpID.objects.create(emp_id=emp_id,designation=designation)
 
         user.role = 'employee'
         user.emp = emp_id_record
@@ -119,8 +123,6 @@ def update_user(request):
             user_id = request.GET.get('user_id')
             user = User.objects.get(id=user_id)
             data = json.loads(request.body)
-            if not User.objects.filter(id=request.user_id, role='admin').exists():
-             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
 
             user.firstName = data.get('firstName', user.firstName)
             user.lastName = data.get('lastName', user.lastName)
@@ -145,40 +147,46 @@ def update_user(request):
 
 
 @csrf_exempt
-def deactivate_user(request):
+def deactivate_employee(request):
     if request.method == 'PUT':
         try:
-            if not User.objects.filter(id=request.user_id, role='admin').exists():
-             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
-            user_id = request.GET.get('user_id')
-            user = User.objects.get(id=user_id)
-            user.active =True
-            user.save()
-            return JsonResponse({'message': 'User deactivated successfully'}, status=200)
+            emp_id = request.GET.get('emp_id')
+            id = EmpID.objects.filter(emp_id=emp_id).values_list('id', flat=True).first()
+            userwithEmpId = User.objects.filter(emp=id)
+            for user in userwithEmpId:     
+                if user.active == False:
+                   user.active = True 
+                   user.save()
+                   return JsonResponse({'message': 'Employee deactivated successfully'}, status=200)
+                else:
+                    return JsonResponse({'error': 'Employee already deactivated'}, status=400)
+        except EmpID.DoesNotExist:
+            return JsonResponse({'error': 'Employee ID not found'}, status=404)
         except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)
-        
+            return JsonResponse({'error': 'Employee not found'}, status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
-
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
 
 @csrf_exempt
-def delete_user(request):
+def delete_employee(request):
     if request.method == 'DELETE':
         try:
-            if not User.objects.filter(id=request.user_id, role='admin').exists():
-             return JsonResponse({'error': 'Only accessible by Admin'}, status=400)
-            user_id = request.GET.get('user_id')
-            User.objects.get(id=user_id).delete()
-            return JsonResponse({'message': 'User deleted successfully'}, status=200)
-        except User.DoesNotExist:
-            return JsonResponse({'error': 'User not found'}, status=404)    
+            emp_id = request.GET.get('emp_id')
+            emp = EmpID.objects.filter(emp_id=emp_id).first() 
+            if emp:
+                emp.delete() 
+                return JsonResponse({'message': 'Employee deleted successfully'}, status=200)
+            else:
+                return JsonResponse({'error': 'Employee not found'}, status=404) 
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=500)
     else:
-        return JsonResponse({'error': 'Invalid request method'}, status=405)
+        return JsonResponse({'error': 'Invalid request method'}, status=405) 
+
+
 
 @csrf_exempt
 def reset_user_passwrod(request):
