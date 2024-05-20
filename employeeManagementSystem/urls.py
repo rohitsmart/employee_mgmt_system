@@ -1,8 +1,8 @@
 from django.contrib import admin
 from django.urls import path
-from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, signup, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv,show_cv
-from users.views import signup,register_candidate,login
-from users.views import signup,login,update_password,forget_password,update_password_with_otp,logout,sms_api
+from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv,show_cv
+from users.views import register_candidate,login
+from users.views import create_employee,login,update_password,forget_password,update_password_with_otp,logout,sms_api,get_employees,show_image,update_image
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
 from project.views import update_project,delete_project
 from task.views import create_task,update_task,delete_task,get_task
@@ -17,21 +17,24 @@ from recruit.views import (clear_answer, create_stream, update_stream, delete_jo
                            mark_notification_as_read, filter_profile, accept_reject,
                            exam_result, get_questions_ids, submit_exam, save_answer,
                            update_candidate_scheduler, fetch_my_scheduler, track,
-                           fetch_stream_with_questions, fetch_stream,get_questions,
+                           fetch_stream_with_questions, fetch_stream,get_questions,create_question,delete_question,
                            candidate_scheduler)
 
-from adminauth.views import create_user_credential,change_role,update_user,deactivate_user,delete_user,fetch_user,reset_user_passwrod
+from adminauth.views import create_user_credential,change_role,update_user,deactivate_employee,delete_employee,fetch_user,reset_user_passwrod
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
     path('api/admin/user/change_role', change_role, name='change_role'),
     path('api/admin/user/update_user', update_user, name='update_user'),
-    path('api/admin/user/deactivate_user', deactivate_user, name='deactivate_user'),
-    path('api/admin/user/delete_user', delete_user, name='delete_user'),
+    path('api/admin/user/deactivate_employee', deactivate_employee, name='deactivate_employee'),
+    path('api/admin/user/delete_employee', delete_employee, name='delete_employee'),
     path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
     path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
-    path('api/user/employee/signup', signup, name='signup'),
+    path('api/user/employee/create_employee', create_employee, name='create_employee'),
+    path('api/user/employee/get_employees', get_employees, name='get_employees'),
+    path('public/images/<str:imagename>', show_image, name='show_image'),
+    path('api/images/update_image', update_image, name='update_image'),
     path('api/user/login', login, name='login'),
     path('api/user/logout', logout, name='logout'),
     path('api/user/update_password', update_password, name='update_password'),
@@ -76,7 +79,9 @@ urlpatterns = [
     path('api/recruit/fetch-job', fetch_job, name='fetch_job'),
     path('api/recruit/edit-job', edit_job, name='edit_job'),
     path('api/recruit/delete-job', delete_job, name='delete_job'),
-    # path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
+    path('api/recruit/create_question', create_question, name='create_question'),
+    path('api/recruit/delete_question', delete_question, name='delete_question'),
+    #path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
     path('api/candidate/register-candidate',register_candidate,name='register_candidate'),
     path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
@@ -106,8 +111,4 @@ urlpatterns = [
     path('api/users/candidate/get-candidate-profile', get_candidate_profile, name='get_candidate_profile'),
     path('api/users/candidate/clear-answer', clear_answer, name='clear_answer'),
 ]
-    
-
-
-
 

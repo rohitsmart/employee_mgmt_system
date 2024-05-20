@@ -779,3 +779,44 @@ def exam_result(request):
         return JsonResponse(response_data, safe=False)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+    
+
+@csrf_exempt
+def create_question(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            question = Questions.objects.create(
+                question=data.get('question'),
+                option1=data.get('option1'),
+                option2=data.get('option2'),
+                option3=data.get('option3'),
+                option4=data.get('option4'),
+                correctResponse=data.get('correctResponse'),
+                type=data.get('type'),
+                level=data.get('level'),
+                stream_id=data.get('stream_id') 
+            )
+            return JsonResponse({'message': 'Question created successfully', 'question_id': question.id}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+
+@csrf_exempt
+def delete_question(request):
+    if request.method == 'DELETE':
+        try:
+            question_id = request.GET.get('question_id')
+            existsQuestion = Questions.objects.get(id=question_id)
+            if existsQuestion:
+                existsQuestion.delete()
+                return JsonResponse({'message': 'Question deleted successfully'}, status=200)
+            else:
+                return JsonResponse({'error': 'Question not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Invalid request method'}, status=405)  
+    

@@ -22,6 +22,7 @@ class User(models.Model):
     mobileNumber = models.BigIntegerField(unique=False)
     password = models.CharField(max_length=512, null=True)
     cv_url=models.URLField(null=True)
+    img_url=models.URLField(null=True)
     active = models.BooleanField(default=False)
 
 class EmpModule(models.Model):
