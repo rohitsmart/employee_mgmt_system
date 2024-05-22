@@ -4,11 +4,9 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
-# from .decorators import role_required
-from assign.decorators import role_required
+from users.decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule
-from users.serializers import UserSerializer
 from .models import EmpID,User,EmpModule
 from django.db.models import Max
 import json
@@ -24,100 +22,180 @@ from django.views.decorators.csrf import csrf_exempt
 import random
 from django.core.cache import cache
 import uuid
+from django.http import HttpResponse
+from django.core.files.storage import default_storage
+import mimetypes
+
+
+ALLOWED_EXTENSION = {'jpg', 'jpeg', 'png'}
+
+def allowed_image(image):
+    return '.' in image and image.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSION
 
 @csrf_exempt
-def signup(request):
+def create_employee(request):
     if request.method == 'POST':
-        data = json.loads(request.body)
+        img = request.FILES.get('image')
+        firstName = request.POST.get('firstName')
+        lastName = request.POST.get('lastName')
+        role = request.POST.get('role')
+        mobileNumber = request.POST.get('mobileNumber')
+        designation = request.POST.get('designation')
 
-        if 'firstName' in data and 'lastName' in data and 'role' in data and 'mobileNumber' in data:
-            if data['role'] == 'employee':
-                try:
-                    mobile_number = int(data['mobileNumber'])
-                    if mobile_number < 1000000000 or mobile_number >= 10000000000:
-                        return JsonResponse({'error': "Mobile number must be a 10-digit integer"}, status=400)
-                except ValueError:
-                    return JsonResponse({'error': "Mobile number must be an integer"}, status=400)
+        if img and allowed_image(img.name):
+            timestamp = int(datetime.now().timestamp())
+            imagename = f'image_{timestamp}{os.path.splitext(img.name)[1]}'
+            path = default_storage.save(f'public/images/{imagename}', img)
+            image_url = default_storage.url(path)
 
-                email = f"{data['firstName'].lower()}.{data['lastName'].lower()}@perfectkode.com"
-                last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
-                last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
-                emp_id = last_emp_id + 1
-            else:
-                return JsonResponse({'error': "Role must be 'employee' to proceed"}, status=400)
+            mobile_number = int(mobileNumber)
+            if mobile_number < 1000000000 or mobile_number >= 10000000000:
+                return JsonResponse({'error': "Mobile number must be a 10-digit integer"}, status=400)
 
-            password = f"{data['firstName'][0].upper()}{data['lastName']}@{emp_id}"
+            email = f"{firstName.lower()}.{lastName.lower()}@perfectkode.com"
+            last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
+            last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
+            emp_id = last_emp_id + 1
+
+            password = f"{firstName[0].upper()}{lastName}@{emp_id}"
 
             try:
-                emp_id_record = EmpID.objects.create(emp_id=emp_id)
+                emp_id_record = EmpID.objects.create(emp_id=emp_id, designation=designation)
                 User.objects.create(
                     emp=emp_id_record,
-                    firstName=data['firstName'],
-                    lastName=data['lastName'],
+                    firstName=firstName,
+                    lastName=lastName,
                     email=email,
-                    role=data['role'],
-                    mobileNumber=data['mobileNumber'],
+                    role=role,
+                    mobileNumber=mobileNumber,
                     password=make_password(password),
-                    active=False
+                    active=False,
+                    img_url=imagename
                 )
                 response_data = {
                     'message': 'User signed up successfully',
                     'email': email,
                     'password': password,
-                    'emp_id':emp_id
+                    'emp_id': emp_id,
+                    "image_url" : image_url
                 }
                 return JsonResponse(response_data, status=201)
             except IntegrityError as e:
                 return JsonResponse({'error': 'Email or mobile number already exists'}, status=400)
         else:
-            return JsonResponse({'error': 'First name, last name, role, and mobile number are required'}, status=400)
+            return JsonResponse({'error': 'FirstName, lastName, Role, mobileNumber and Designation are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
+
+@require_GET
+def show_image(request, imagename):
+    file_path = f'public/images/{imagename}'
+    file = default_storage.open(file_path, 'rb')
+    mime_type, _ = mimetypes.guess_type(file_path)
+    response = HttpResponse(file, content_type=mime_type)
+    response['Content-Disposition'] = f'inline; imagename="{imagename}"'
+    return response
+
+
+
+@csrf_exempt
+def update_image(request):
+    if request.method == 'POST':
+        id = request.POST.get('id')
+        img = request.FILES.get('image')
+      
+        if not allowed_image(img.name):
+            return JsonResponse({'error': 'Invalid image format'}, status=400)
+
+        timestamp = int(datetime.now().timestamp())
+        imagename = f'image_{timestamp}{os.path.splitext(img.name)[1]}'
+        path = default_storage.save(f'public/images/{imagename}', img)
+        image_url = default_storage.url(path)
+
+        try:
+            user = User.objects.get(id=id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+
+        file_path = f'public/images/{user.img_url}'
+        if default_storage.exists(file_path):
+            default_storage.delete(file_path)
+
+        user.img_url = imagename
+        user.save()
+
+        return JsonResponse({'message': 'Image updated successfully', 'image_url': image_url})
+    else:
+        return JsonResponse({'error': 'POST method required'}, status=405)
+
+
+ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 @csrf_exempt
 @require_POST
 def register_candidate(request):
-        try:
-            data=json.loads(request.body)
-            fullName=data.get('fullName')
-            degree=data.get('degree')
-            email=data.get('email')
-            mobileNumber=data.get('mobileNumber')
+    try:
+        if 'file' in request.FILES:
+            file = request.FILES['file']
+            if file and allowed_file(file.name):
+                timestamp = int(datetime.now().timestamp())
+                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                path = default_storage.save(f'public/files/{filename}', file)
+                cv_url = default_storage.url(path)
 
-            candidate=User.objects.create(
-            fullName=fullName,
-            degree=degree,
-            email=email,
-            mobileNumber=mobileNumber,
-            role='candidate'
-            )
-            candidate.save()
-            return JsonResponse({'messge':'profile submitted successfully'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)})
+                fullName = request.POST.get('fullName')
+                degree = request.POST.get('degree')
+                email = request.POST.get('email')
+                mobileNumber = request.POST.get('mobileNumber')
+
+                user = User.objects.create(
+                    fullName=fullName,
+                    degree=degree,
+                    email=email,
+                    mobileNumber=mobileNumber,
+                    role='candidate',
+                    cv_url=filename
+                )
+                complete_cv_url = request.build_absolute_uri(cv_url)
+                
+                return JsonResponse({'success': 'Candidate registered successfully', 'cv_url': complete_cv_url})
+            else:
+                return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
+        else:
+            return JsonResponse({'error': 'No file uploaded'}, status=400)
+    except Exception as e:
+        return JsonResponse({'error': 'An error occurred during registration'}, status=500)
+      
 
 @require_GET
 def get_candidate_profile(request):
-    if request.method=='GET':
+    if request.method == 'GET':
         try:
-            candidates=User.objects.filter(role='candidate')
+            candidates = User.objects.filter(role='candidate')
             if not candidates:
-                return JsonResponse({'message': 'candidates not found'})
+                return JsonResponse({'message': 'Candidates not found'})
+            
             candidate_data = []
             for candidate in candidates:
-                candidate_data.append({
+              filename = candidate.cv_url
+              file_path = f'public/files/{filename}'
+              candidate_data.append({
                     'fullName': candidate.fullName,
                     'degree': candidate.degree,
                     'email': candidate.email,
                     'mobileNumber': candidate.mobileNumber,
-                    'active':candidate.active,
-                    'cv_url': candidate.cv_url
+                    'active': candidate.active,
+                    'cv_url': file_path
                 })
-                return JsonResponse({'candidates': candidate_data})
+            
+            return JsonResponse({'candidates': candidate_data})
         except Exception as e:
             return JsonResponse({'error': str(e)})
-        else:
-            return JsonResponse({'error': 'Only GET requests are allowed'})
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'})
                     
 @csrf_exempt
 def login(request):
@@ -139,6 +217,7 @@ def login(request):
                        user_id=user.id
                      )
                     return JsonResponse({
+                        'role' : user.role,
                         'user_id': user.id,
                         'access_token': token,
                     }, status=200)
@@ -229,28 +308,46 @@ def update_password_with_otp(request):
     
 
 @csrf_exempt
-# @jwt_auth_required
 def upload_cv(request):
     if request.method == 'POST':
         try:
-            if request.FILES.get('file'):
+            candidate_id = request.GET.get('candidate_id')
+
+            print("Candidate ID:", candidate_id)
+
+            if 'file' in request.FILES:
                 file = request.FILES['file']
-                timestamp = int(datetime.now().timestamp())
-                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
-                path = default_storage.save(f'public/files/{filename}', file)
-                cv_url = default_storage.url(path)
-                image = User(cv_url=cv_url)
-                image.save()
-                return JsonResponse({'success': 'Image uploaded', 'image_url': cv_url})
+                if file and allowed_file(file.name):
+                    timestamp = int(datetime.now().timestamp())
+                    filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
+                    path = default_storage.save(f'public/files/{filename}', file)
+                    cv_url = default_storage.url(path)
+                    user = User.objects.get(id=candidate_id)
+                    user.cv_url=filename
+                    user.save()
+                    return JsonResponse({'success': 'File uploaded', 'file_url': cv_url})
+                else:
+                    return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
             else:
                 return JsonResponse({'error': 'No file uploaded'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': 'An error occurred during uploading the image'}, status=500)
-    
+            return JsonResponse({'error': 'An error occurred during uploading the file'}, status=500)
+    else:
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+
+@require_GET
+def show_cv(request, filename):
+    file_path = f'public/files/{filename}'
+    file = default_storage.open(file_path, 'rb')
+    mime_type, _ = mimetypes.guess_type(file_path)
+    response = HttpResponse(file, content_type=mime_type)
+    response['Content-Disposition'] = f'inline; filename="{filename}"'
+    return response
     
 @csrf_exempt
 @require_POST
-# @role_required('admin')
+@jwt_auth_required
+@role_required('admin')
 def create_empmodule(request):
         if request.method == 'POST':
             try:
@@ -270,7 +367,8 @@ def create_empmodule(request):
         
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+@role_required('admin')
+@jwt_auth_required
 def update_empModule(request):
     if request.method=='PUT':
         try:
@@ -278,7 +376,7 @@ def update_empModule(request):
             if not module_id:
                 return JsonResponse({'message':'module not found'})
             data=json.loads(request.body)
-            empModule=EmpModule.objects.get(id=module_id)
+            empModule=EmpModule.objects.get(id=11)
             empModule.moduleName=data.get('moduleName')
             empModule.moduleKey=data.get('moduleKey')
             empModule.save()
@@ -289,7 +387,7 @@ def update_empModule(request):
         return JsonResponse({'error': 'Only PUT requests are allowed'})
     
 @require_GET
-# @role_required('admin')
+@role_required('admin')
 def get_empModule(request):
     if request.method=='GET':
         try:
@@ -307,7 +405,7 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-# @role_required('admin')          #this  role_required is not working so i need to fix this  
+@role_required('admin')          #this  role_required is not working so i need to fix this  
 @jwt_auth_required                                     
 def authorization_to_module(request):
     if request.method=='POST':
@@ -325,7 +423,7 @@ def authorization_to_module(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+@role_required('admin')
 def update_authorization_to_module(request):
     if request.method=='PUT':
         try:
@@ -342,10 +440,11 @@ def update_authorization_to_module(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed'})    
-    
+
+
 @csrf_exempt
 @require_POST
-# @role_required('admin')
+@role_required('admin')
 def authorize_to_employee(request):
     if request.method == 'POST':
         try:
@@ -360,9 +459,10 @@ def authorize_to_employee(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}) 
     
+    
 @csrf_exempt
 @require_http_methods(['PUT'])
-# @role_required('admin')
+@role_required('admin')
 def update_authorization_to_employee(request):
     if request.method == 'PUT':
         try:
@@ -403,3 +503,40 @@ def sms_api(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)                 
+
+
+@csrf_exempt
+#@role_required('admin')
+def get_employees(request):
+    try:
+        employees = EmpID.objects.all()
+        employees_details = []
+
+        for employee in employees:
+            try:
+                user = User.objects.get(emp_id=employee.id)
+                fullname = None
+                if user.firstName is None and user.lastName is None:
+                    fullname = user.fullName
+                else:
+                    fullname = f"{user.firstName} {user.lastName}"
+                print(fullname)
+                #imagename=user.img_url
+                #file_path = f'public/images/{imagename}'
+            
+                employees_details.append({
+                    "emp_id": employee.emp_id,
+                    "designation": employee.designation,
+                    "fullname": fullname,
+                    "active": user.active,
+                    "image_url" : f'/public/images/{user.img_url}'
+
+                })
+            except User.DoesNotExist:
+                # Handle the case where the user does not exist
+                continue
+
+        return JsonResponse({"employees_details": employees_details})
+    except EmpID.DoesNotExist:
+        return JsonResponse({"employees_details": []})
+    
