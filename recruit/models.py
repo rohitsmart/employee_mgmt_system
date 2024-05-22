@@ -90,17 +90,11 @@ class Exam(models.Model):
     scheduler = models.ForeignKey(Scheduler, on_delete=models.CASCADE)    
 
 class AuthorizationToEmployee(models.Model):
-    emp= models.ForeignKey(User, on_delete=models.CASCADE, related_name='employee_authorizations')
-    candidate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='candidate_authorizations')
+    emp_id= models.IntegerField(null=True)
+    candidate_id = models.IntegerField(null=True)
+    round = models.IntegerField(null=True)
 
-
-    
-class AuthorizationToModule(models.Model):
-    emp = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_authorizations')
-
-    def __str__(self):
-        return f"Module Authorization: {self.emp}"    
-    
+  
 class Job(models.Model):
     STATUS_CHOICES = [
         ('Active', 'Active'),
