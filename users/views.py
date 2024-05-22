@@ -392,7 +392,7 @@ def get_empModule(request):
     if request.method=='GET':
         try:
             module_id=request.GET.get('id')
-            if module_id:
+            if not module_id:
                 return JsonResponse({'message':'module not found'})
             empModule=EmpModule.objects.get(id=module_id)
             return JsonResponse({'moduleName':empModule.moduleName,

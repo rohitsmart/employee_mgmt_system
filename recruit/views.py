@@ -13,10 +13,14 @@ from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
 
+from django.core.serializers import serialize
+from assign.decorators import role_required
+
+
 
 @csrf_exempt
 @require_POST
-@jwt_auth_required
+# @role_required('admin')
 def create_stream(request):
     if request.method == 'POST':
         try:
