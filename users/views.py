@@ -274,8 +274,8 @@ def create_empmodule(request):
 def update_empModule(request):
     if request.method=='PUT':
         try:
-            module_id=request.get('id')
-            if module_id:
+            module_id=request.GET.get('id')
+            if not module_id:
                 return JsonResponse({'message':'module not found'})
             data=json.loads(request.body)
             empModule=EmpModule.objects.get(id=module_id)
@@ -294,7 +294,7 @@ def get_empModule(request):
     if request.method=='GET':
         try:
             module_id=request.GET.get('id')
-            if module_id:
+            if not module_id:
                 return JsonResponse({'message':'module not found'})
             empModule=EmpModule.objects.get(id=module_id)
             return JsonResponse({'moduleName':empModule.moduleName,
