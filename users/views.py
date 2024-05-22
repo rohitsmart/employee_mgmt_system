@@ -6,7 +6,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
 from users.decorators import role_required
 from project.decorators import jwt_auth_required
-from recruit.models import AuthorizationToEmployee, AuthorizeToModule
+from recruit.models import AuthorizationToEmployee, AuthorizeToModule,Scheduler
 from .models import EmpID,User,EmpModule
 from django.db.models import Max
 import json
@@ -87,6 +87,8 @@ def create_employee(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
+
 @require_GET
 def show_image(request, imagename):
     file_path = f'public/images/{imagename}'
@@ -134,40 +136,30 @@ ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
+
 @csrf_exempt
 @require_POST
 def register_candidate(request):
     try:
-        if 'file' in request.FILES:
-            file = request.FILES['file']
-            if file and allowed_file(file.name):
-                timestamp = int(datetime.now().timestamp())
-                filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
-                path = default_storage.save(f'public/files/{filename}', file)
-                cv_url = default_storage.url(path)
-
-                fullName = request.POST.get('fullName')
-                degree = request.POST.get('degree')
-                email = request.POST.get('email')
-                mobileNumber = request.POST.get('mobileNumber')
-
-                user = User.objects.create(
-                    fullName=fullName,
-                    degree=degree,
-                    email=email,
-                    mobileNumber=mobileNumber,
-                    role='candidate',
-                    cv_url=filename
-                )
-                complete_cv_url = request.build_absolute_uri(cv_url)
-                
-                return JsonResponse({'success': 'Candidate registered successfully', 'cv_url': complete_cv_url})
-            else:
-                return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
-        else:
-            return JsonResponse({'error': 'No file uploaded'}, status=400)
+        data = json.loads(request.body)
+        fullName = data.get('fullName')
+        degree = data.get('degree')
+        email = data.get('email')
+        mobileNumber = data.get('mobileNumber')
+        cv_url = data.get('cv_url')
+        
+        user = User.objects.create(
+            fullName=fullName,
+            degree=degree,
+            email=email,
+            mobileNumber=mobileNumber,
+            role='candidate',
+            cv_url=cv_url
+        )
+        return JsonResponse({'success': 'Candidate registered successfully'})
     except Exception as e:
         return JsonResponse({'error': 'An error occurred during registration'}, status=500)
+
       
 
 @require_GET
@@ -181,8 +173,9 @@ def get_candidate_profile(request):
             candidate_data = []
             for candidate in candidates:
               filename = candidate.cv_url
-              file_path = f'public/files/{filename}'
+              file_path = f'{filename}'
               candidate_data.append({
+                    'id' : candidate.id,
                     'fullName': candidate.fullName,
                     'degree': candidate.degree,
                     'email': candidate.email,
@@ -196,7 +189,8 @@ def get_candidate_profile(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only GET requests are allowed'})
-                    
+
+
 @csrf_exempt
 def login(request):
     if request.method == 'POST':
@@ -311,9 +305,9 @@ def update_password_with_otp(request):
 def upload_cv(request):
     if request.method == 'POST':
         try:
-            candidate_id = request.GET.get('candidate_id')
+            #candidate_id = request.GET.get('candidate_id')
 
-            print("Candidate ID:", candidate_id)
+            #print("Candidate ID:", candidate_id)
 
             if 'file' in request.FILES:
                 file = request.FILES['file']
@@ -322,9 +316,9 @@ def upload_cv(request):
                     filename = f'file_{timestamp}{os.path.splitext(file.name)[1]}'
                     path = default_storage.save(f'public/files/{filename}', file)
                     cv_url = default_storage.url(path)
-                    user = User.objects.get(id=candidate_id)
-                    user.cv_url=filename
-                    user.save()
+                    #user = User.objects.get(id=candidate_id)
+                    #user.cv_url=filename
+                    #user.save()
                     return JsonResponse({'success': 'File uploaded', 'file_url': cv_url})
                 else:
                     return JsonResponse({'error': 'Invalid file format. Allowed formats: pdf, doc, docx, jpg, jpeg, png'}, status=400)
@@ -448,16 +442,32 @@ def update_authorization_to_module(request):
 def authorize_to_employee(request):
     if request.method == 'POST':
         try:
-            data=json.loads(request.body)
-            emp_id=data.get('emp_id')
-            candidate_id=data.get('candidate_id')
-            authEmployee=AuthorizationToEmployee.objects.create(emp_id=emp_id,candidate_id=candidate_id)
-            authEmployee.save()
-            return JsonResponse({'success':'employee is authorized to employee'})
+            data = json.loads(request.body)
+            emp_id = data.get('emp_id')
+            candidate_id = data.get('candidate_id')
+            round = data.get('round')
+            
+            isValidScheduler = Scheduler.objects.get(round=round, candidate_id=candidate_id)
+            
+            if isValidScheduler.status == 'pending':
+                try:
+                    alreadyAuthorized = AuthorizationToEmployee.objects.get(round=round, candidate_id=candidate_id, emp_id=emp_id)
+                    return JsonResponse({'error': 'The candidate is already authorized to another employee'}, status=400)
+                except AuthorizationToEmployee.DoesNotExist:
+                    AuthorizationToEmployee.objects.create(emp_id=emp_id, candidate_id=candidate_id, round=round)
+                    return JsonResponse({'success': 'Employee is authorized for the candidate'}, status=201)
+            else:
+                return JsonResponse({'error': 'Candidate does not have a pending interview'}, status=400)
+        except Scheduler.DoesNotExist:
+            return JsonResponse({'error': 'Scheduler not found'}, status=404)
+        except json.JSONDecodeError:
+            return JsonResponse({'error': 'Invalid JSON data'}, status=400)
         except Exception as e:
-            return JsonResponse({'error': str(e)})
+            return JsonResponse({'error': str(e)}, status=500)
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed'}) 
+        return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
+
+
     
     
 @csrf_exempt
@@ -540,3 +550,44 @@ def get_employees(request):
     except EmpID.DoesNotExist:
         return JsonResponse({"employees_details": []})
     
+@csrf_exempt
+# @role_required('admin')
+def upcoming_previous_candidates(request):
+    if request.method == 'GET':
+        try:
+            existAuthorization = AuthorizationToEmployee.objects.filter(emp_id=32)
+            upcoming_candidates = []
+            previous_candidates = []
+            
+            for authorization in existAuthorization:
+                candidate_data = User.objects.get(id=authorization.candidate_id)
+                isAttempted = Scheduler.objects.filter(candidate_id=authorization.candidate_id, round=authorization.round, status='pending').exists()
+                
+                candidate_info = {
+                    'candidate_id': candidate_data.id,
+                    'fullName': candidate_data.fullName,
+                    'email': candidate_data.email,
+                    "mobileNumber" : candidate_data.mobileNumber,
+                    'cv_url': candidate_data.cv_url
+                }
+                
+                if isAttempted:
+                    upcoming_candidates.append(candidate_info)
+                else:
+                    previous_candidates.append(candidate_info)
+                    
+            return JsonResponse({'upcoming_candidates': upcoming_candidates, 'previous_candidates': previous_candidates}, status=200)
+        
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'User not found'}, status=404)
+        except AuthorizationToEmployee.DoesNotExist:
+            return JsonResponse({'error': 'AuthorizationToEmployee not found'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Only GET requests are allowed'}, status=405)
+
+
+
+
+

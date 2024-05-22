@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv,show_cv
+from users.views import authorization_to_module, authorize_to_employee, create_empmodule, get_candidate_profile, get_empModule, update_authorization_to_employee, update_authorization_to_module, update_empModule, upload_cv,show_cv,upcoming_previous_candidates
 from users.views import register_candidate,login
 from users.views import create_employee,login,update_password,forget_password,update_password_with_otp,logout,sms_api,get_employees,show_image,update_image
 from project.views import create_module,delete_module, update_module, get_module,create_project,get_project
@@ -32,6 +32,7 @@ urlpatterns = [
     path('api/admin/user/fetch_user', fetch_user, name='fetch_user'),
     path('api/admin/user/reset_user_passwrod', reset_user_passwrod, name='reset_user_passwrod'),
     path('api/user/employee/create_employee', create_employee, name='create_employee'),
+    path('api/user/employee/upcoming_previous_candidates', upcoming_previous_candidates, name='upcoming_previous_candidates'),
     path('api/user/employee/get_employees', get_employees, name='get_employees'),
     path('public/images/<str:imagename>', show_image, name='show_image'),
     path('api/images/update_image', update_image, name='update_image'),

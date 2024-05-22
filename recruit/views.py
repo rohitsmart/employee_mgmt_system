@@ -111,13 +111,13 @@ def get_questions_ids(request):
 
         round_value = Scheduler.objects.filter(id=scheduler_id, candidate_id=candidate_id).values_list('round', flat=True).first()
 
-        questions = Questions.objects.order_by('?')[:5]
+        questions = Questions.objects.order_by('?')[:10]
         for question in questions:
             Exam.objects.create(
                 candidate_id=candidate_id,
                 question_id=question.id,
                 candidateResponse='null',
-                correctResponse="null",
+                correctResponse=question.correctResponse,
                 Date=date.today(),
                 status="null",
                 round=round_value,
@@ -213,7 +213,7 @@ def clear_answer(request):
             if exam:
                 exam = exam.first()
                 exam.candidateResponse = 'null'
-                exam.correctResponse = 'null'
+                #exam.correctResponse = 'null'
                 exam.status = 'null'
                 exam.save()
                 return JsonResponse({'success': 'candidate response cleared successfully'})
@@ -303,7 +303,7 @@ def fetch_result(request):
 
                 exam_details_list = []
 
-                exam_details = Exam.objects.filter(round=result_item.round)
+                exam_details = Exam.objects.filter(round=result_item.round,candidate_id=candidate_id)
                 for exam_detail in exam_details:
                     try:
                         questions_details = Questions.objects.get(id=exam_detail.question_id)
@@ -557,6 +557,9 @@ def accept_reject(request):
             return JsonResponse({'error': 'you are not authorized to filter the profile'})
         applied_jobs = ApplyJob.objects.filter(status='Active')
         for job in applied_jobs:
+            # candidate_data= User.objects.get(id=job.candidate)
+            # candidate_data.password='password'
+            # candidate_data.save()
             find_job = Job.objects.get(id=job.jobID)
             notification = Notification.objects.create(
                 message = "Congrats!! You're eligible for the 1st round interview for the role of " + find_job.jobName,
