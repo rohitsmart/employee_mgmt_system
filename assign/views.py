@@ -5,18 +5,15 @@ from django.views.decorators.http import require_http_methods
 from django.http import JsonResponse
 import json
 from assign.models import Assign
-from project.models import Project
-from module.models import Module
 from recruit.models import AuthorizeToModule
 from task.models import Task
 from .decorators import jwt_auth_required
-from users.decorators import role_required
 
 
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-@role_required('employee')
+# @role_required('employee')
 def assign_task(request):      #here we assign the task by task id , tsk can only be assigned by the tl or pm  or admin
     if request.method == 'POST':
         try:
@@ -63,7 +60,7 @@ def assign_task(request):      #here we assign the task by task id , tsk can onl
 @csrf_exempt
 @require_http_methods(["DELETE"])
 @jwt_auth_required
-@role_required('employee')
+# @role_required('employee')
 def unassign_task(request):          #this api also only accessed by the tl or pm or admin
     if request.method == 'DELETE':
         try:

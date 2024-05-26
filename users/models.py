@@ -28,7 +28,6 @@ class User(models.Model):
 class EmpModule(models.Model):
     id = models.AutoField(primary_key=True)
     moduleName=models.CharField(max_length=100,null=True)
-    moduleKey=models.TextField()
 
 class Token(models.Model):
     token = models.CharField(max_length=255, unique=True)

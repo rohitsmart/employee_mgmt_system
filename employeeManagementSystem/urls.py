@@ -14,11 +14,12 @@ from leave.views import apply_leave, update_leave, get_leave, delete_leave
 from recruit.views import (clear_answer, create_stream, update_stream, delete_job, fetch_result,
                            create_job, fetch_job, edit_job, apply_for_job,
                            withdraw_job, fetch_notifications_by_user,
-                           mark_notification_as_read, filter_profile, accept_reject,
+                           mark_notification_as_read, filter_profile,
                            exam_result, get_questions_ids, submit_exam, save_answer,
                            update_candidate_scheduler, fetch_my_scheduler, track,
-                           fetch_stream_with_questions, fetch_stream,get_questions,create_question,delete_question,
-                           candidate_scheduler)
+                           fetch_stream_with_questions, fetch_stream,get_questions,create_question,delete_question,fetch_job_list,
+                           candidate_scheduler,fetch_applied_job_by_candidate,fetch_all_applied_jobs,
+                           select_candidate_for_round1)
 
 from adminauth.views import create_user_credential,change_role,update_user,deactivate_employee,delete_employee,fetch_user,reset_user_passwrod
 
@@ -82,14 +83,16 @@ urlpatterns = [
     path('api/recruit/delete-job', delete_job, name='delete_job'),
     path('api/recruit/create_question', create_question, name='create_question'),
     path('api/recruit/delete_question', delete_question, name='delete_question'),
-    #path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
+    path('api/recruit/fetch_all_applied_jobs', fetch_all_applied_jobs, name='fetch_all_applied_jobs'),
+    path('api/recruit/select_candidate_for_round1', select_candidate_for_round1, name='select_candidate_for_round1'),
+    path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
     path('api/candidate/register-candidate',register_candidate,name='register_candidate'),
     path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),
+    path('api/candidate/fetch_applied_job_by_candidate', fetch_applied_job_by_candidate, name='fetch_applied_job_by_candidate'),
     path('api/candidate/withdraw_job', withdraw_job, name='withdraw_job'),
     path('api/candidate/fetch_notifications_by_user', fetch_notifications_by_user, name='fetch_notifications_by_user'),
     path('api/candidate/mark_notification_as_read', mark_notification_as_read, name='mark_notification_as_read'),
     path('api/employee/filter/profile', filter_profile, name='filterProfile'),
-    path('api/employee/candidate/accept_reject', accept_reject, name='accept_reject'),
     path('api/recruit/candidate/update-candidate-scheduler', update_candidate_scheduler, name='update_candidate_scheduler'),
     path('api/recruit/candidate/fetch-my-scheduler', fetch_my_scheduler, name='fetch_my_scheduler'),
     path('api/recruit/candidate/track',track, name='track'),

@@ -2,10 +2,25 @@ from django.db import models
 from users.models import EmpModule, User
 
 class ApplyJob(models.Model):
-    id=models.AutoField(primary_key=True)
-    candidate=models.ForeignKey(User, on_delete=models.CASCADE)
-    status=models.CharField(max_length=10,null=True)
-    jobID=models.CharField(max_length=100)
+    id = models.AutoField(primary_key=True)
+    candidate = models.ForeignKey(User, on_delete=models.CASCADE, related_name='applications')
+    qualification = models.CharField(max_length=100, null=True)
+    applied_date = models.DateField(null=True)
+    job_id = models.IntegerField(null=True)
+    skills = models.TextField(null=True)
+    experience = models.PositiveIntegerField(null=True)
+    passing_year = models.CharField(max_length=4, null=True)
+    marks = models.CharField(max_length=20,null=True)
+    status = models.CharField(max_length=20, choices=[
+        ('Applied', 'Applied'),
+        ('In Review', 'In Review'),
+        ('Interviewed', 'Interviewed'),
+        ('Offered', 'Offered'),
+        ('Rejected', 'Rejected')
+    ], null=True)
+
+
+
     
 class Role(models.Model):
     id=models.AutoField(primary_key=True)
@@ -34,6 +49,7 @@ class Scheduler(models.Model):
         (2, 'Round 2'),
     )
     round = models.IntegerField(choices=ROUNDS)
+    job_id=models.IntegerField(null=True)
     
     
 class Questions(models.Model):
@@ -108,6 +124,7 @@ class Job(models.Model):
     jobSkills = models.TextField()
     experience = models.IntegerField()
     expire = models.DateField()
+    qualification = models.TextField(null=True)
     createdDate = models.DateField(auto_now_add=True)
     creater = models.ForeignKey(User, on_delete=models.CASCADE)    #this is associated with the user table
     

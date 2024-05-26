@@ -10,7 +10,6 @@ from project.decorators import jwt_auth_required
 from adminauth.models import UserCredential
 from users.models import User,EmpID
 from django.contrib.auth.hashers import make_password
-from users.decorators import role_required
 
 
 @require_POST
@@ -79,7 +78,7 @@ def generate_password():
 
 @require_POST
 @csrf_exempt
-@role_required('admin')
+# @role_required('admin')
 @jwt_auth_required
 def change_role(request):
     try:

@@ -4,7 +4,6 @@ from datetime import datetime
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.hashers import make_password
-from users.decorators import role_required
 from project.decorators import jwt_auth_required
 from recruit.models import AuthorizationToEmployee, AuthorizeToModule,Scheduler
 from .models import EmpID,User,EmpModule
@@ -224,6 +223,7 @@ def login(request):
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 
+
 @csrf_exempt
 @require_POST
 @jwt_auth_required
@@ -237,6 +237,7 @@ def logout(request):
             return JsonResponse({'error': 'Token does not exist'}, status=400)  
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @require_POST
@@ -261,6 +262,7 @@ def update_password(request):
 
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @require_POST
@@ -329,6 +331,7 @@ def upload_cv(request):
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'}, status=405)
 
+
 @require_GET
 def show_cv(request, filename):
     file_path = f'public/files/{filename}'
@@ -341,10 +344,11 @@ def show_cv(request, filename):
 @csrf_exempt
 @require_POST
 @jwt_auth_required
-@role_required('admin')
 def create_empmodule(request):
         if request.method == 'POST':
             try:
+                if not User.objects.filter(id=request.user_id, role='admin').exists():
+                   return JsonResponse({'error': 'Only admin can access it'}, status=404)
                 data=json.loads(request.body)
                 moduleName=data.get('moduleName')
                 moduleKey=data.get('moduleKey')   #this will be the alphanumeric filed
@@ -358,14 +362,16 @@ def create_empmodule(request):
                 return JsonResponse({'error': str(e)})
         else:
             return JsonResponse({'error': 'Only POST requests are allowed'})
-        
+
+
 @csrf_exempt
 @require_http_methods(['PUT'])
-@role_required('admin')
 @jwt_auth_required
 def update_empModule(request):
     if request.method=='PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+              return JsonResponse({'error': 'Only admin can access it'}, status=404)
             module_id=request.GET.get('id')
             if not module_id:
                 return JsonResponse({'message':'module not found'})
@@ -380,11 +386,14 @@ def update_empModule(request):
     else:
         return JsonResponse({'error': 'Only PUT requests are allowed'})
     
+
 @require_GET
-@role_required('admin')
+@jwt_auth_required
 def get_empModule(request):
     if request.method=='GET':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+               return JsonResponse({'error': 'Only admin can access it'}, status=404)
             module_id=request.GET.get('id')
             if not module_id:
                 return JsonResponse({'message':'module not found'})
@@ -399,11 +408,13 @@ def get_empModule(request):
                     
 @csrf_exempt
 @require_POST
-@role_required('admin')          #this  role_required is not working so i need to fix this  
 @jwt_auth_required                                     
 def authorization_to_module(request):
     if request.method=='POST':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+                return JsonResponse({'error': 'Only admin can access it'}, status=404)
+            
             data=json.loads(request.body)
             employee_id=data.get('employee_id')
             module_id=data.get('module_id')
@@ -414,13 +425,16 @@ def authorization_to_module(request):
             return JsonResponse({'error': str(e)})
     else:
         return JsonResponse({'error': 'Only POST requests are allowed'})
-    
+
+
 @csrf_exempt
 @require_http_methods(['PUT'])
-@role_required('admin')
+@jwt_auth_required
 def update_authorization_to_module(request):
     if request.method=='PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+              return JsonResponse({'error': 'Only admin can access it'}, status=404)
             module=request.GET.get('id')
             if not module:
                 return JsonResponse({'message':'module not found'})
@@ -438,10 +452,12 @@ def update_authorization_to_module(request):
 
 @csrf_exempt
 @require_POST
-@role_required('admin')
+@jwt_auth_required
 def authorize_to_employee(request):
     if request.method == 'POST':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+               return JsonResponse({'error': 'Only admin can access it'}, status=404)
             data = json.loads(request.body)
             emp_id = data.get('emp_id')
             candidate_id = data.get('candidate_id')
@@ -472,10 +488,12 @@ def authorize_to_employee(request):
     
 @csrf_exempt
 @require_http_methods(['PUT'])
-@role_required('admin')
+@jwt_auth_required
 def update_authorization_to_employee(request):
     if request.method == 'PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+               return JsonResponse({'error': 'Only admin can access it'}, status=404)
             authEmployee=request.GET.get('id')
             if not authEmployee:
                 return JsonResponse({'message':'module not found'})
@@ -516,9 +534,12 @@ def sms_api(request):
 
 
 @csrf_exempt
-#@role_required('admin')
+@jwt_auth_required
 def get_employees(request):
     try:
+        if not User.objects.filter(id=request.user_id, role='admin').exists():
+           return JsonResponse({'error': 'Only admin can access it'}, status=404)
+        
         employees = EmpID.objects.all()
         employees_details = []
 
@@ -530,9 +551,6 @@ def get_employees(request):
                     fullname = user.fullName
                 else:
                     fullname = f"{user.firstName} {user.lastName}"
-                print(fullname)
-                #imagename=user.img_url
-                #file_path = f'public/images/{imagename}'
             
                 employees_details.append({
                     "emp_id": employee.emp_id,
@@ -551,11 +569,16 @@ def get_employees(request):
         return JsonResponse({"employees_details": []})
     
 @csrf_exempt
-# @role_required('admin')
+@jwt_auth_required
 def upcoming_previous_candidates(request):
     if request.method == 'GET':
         try:
-            existAuthorization = AuthorizationToEmployee.objects.filter(emp_id=32)
+            id=request.user_id
+            userExist=User.objects.filter(id=id, role='employee').exists()
+            if not userExist:
+              return JsonResponse({'error': 'Only employees can access it'}, status=404)
+
+            existAuthorization = AuthorizationToEmployee.objects.filter(emp_id=id)
             upcoming_candidates = []
             previous_candidates = []
             
@@ -568,6 +591,7 @@ def upcoming_previous_candidates(request):
                     'fullName': candidate_data.fullName,
                     'email': candidate_data.email,
                     "mobileNumber" : candidate_data.mobileNumber,
+                    "round" : authorization.round,
                     'cv_url': candidate_data.cv_url
                 }
                 

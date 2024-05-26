@@ -13,20 +13,19 @@ from recruit.models import Exam,Track
 from recruit.models import Result,Job,ApplyJob,Notification
 from users.models import User
 
-from django.core.serializers import serialize
-from assign.decorators import role_required
-
 
 
 @csrf_exempt
 @require_POST
-# @role_required('admin')
+@jwt_auth_required
 def create_stream(request):
     if request.method == 'POST':
         try:
+            if not User.objects.filter(id=request.user.id, role='admin').exists():
+              return JsonResponse({'error': 'Only admin can access it'}, status=404)
             user = request.user_id
             if not user:
-                return JsonResponse({'message': 'User is unauthenticated'})
+                return JsonResponse({'message': 'User is unauthenticated'},status=401)
             data = json.loads(request.body)
             streamName = data.get('streamName')
 
@@ -35,11 +34,11 @@ def create_stream(request):
             )
             stream.save()
             
-            return JsonResponse({'message': 'Stream created successfully'})
+            return JsonResponse({'message': 'Stream created successfully'},status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed'})
+        return JsonResponse({'error': 'Only POST requests are allowed'},status=400)
 
 
 @csrf_exempt
@@ -48,28 +47,33 @@ def create_stream(request):
 def update_stream(request):
     if request.method == 'PUT':
         try:
+            if not User.objects.filter(id=request.user.id, role='admin').exists():
+               return JsonResponse({'error': 'Only admin can access it'}, status=404)
             stream_id=request.GET.get('id')
             if not stream_id:
-                return JsonResponse({'message':'stream id not found'})
+                return JsonResponse({'message':'stream id not found'},status=404)
             data = json.loads(request.body)
             stream=Stream.objects.get(id=stream_id)
             stream.streamName = data.get('streamName')
             stream.save()
-            return JsonResponse({'message':'stream updated successfully'})
+            return JsonResponse({'message':'stream updated successfully'},status=200)
         except Stream.DoesNotExist:
-            return JsonResponse({'error': 'stream not found'})
+            return JsonResponse({'error': 'stream not found'},status=404)
     else:
-        return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'})
+        return JsonResponse({'error': 'Only PUT requests are allowed for updating the stream'},status=400)
   
     
 @require_GET
 @jwt_auth_required
+@jwt_auth_required
 def fetch_stream(request):
     if request.method == 'GET':
         try:
+            if not User.objects.filter(id=request.user_id, role='admin').exists():
+                return JsonResponse({'error': 'Only admin can access it'}, status=404)
             streams=Stream.objects.all()
             if not streams:
-                return JsonResponse({'message': 'device not found'})
+                return JsonResponse({'message': 'device not found'},status=404)
             stream_name = []
             for stream in streams:
                 stream_name.append({
@@ -77,21 +81,24 @@ def fetch_stream(request):
                 })
                 return JsonResponse({'streams': stream_name})
         except Stream.DoesNotExist:
-            return JsonResponse({'error':'stream not found'})
+            return JsonResponse({'error':'stream not found'},status=404)
     else:
-        return JsonResponse({'error': 'Only GET requests are allowed'})
+        return JsonResponse({'error': 'Only GET requests are allowed'},status=400)
 
 
 @require_GET
+@jwt_auth_required
 def get_questions_ids(request): 
     try:
+        if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
         candidate_id = request.GET.get('id')
         scheduler_id = request.GET.get('scheduler_id')
         Exam.objects.filter(scheduler_id=scheduler_id, candidate_id=candidate_id).delete()
         
         is_scheduled_exam = Scheduler.objects.filter(id=scheduler_id, candidate_id=candidate_id, status='pending').exists()
         if not is_scheduled_exam:
-            return JsonResponse({"error": "Exam is not scheduled yet or already attempted"})
+            return JsonResponse({"error": "Exam is not scheduled yet or already attempted" , "code" :404},status=404)
 
         Result.objects.filter(scheduler_id=scheduler_id).delete()
 
@@ -111,7 +118,7 @@ def get_questions_ids(request):
 
         round_value = Scheduler.objects.filter(id=scheduler_id, candidate_id=candidate_id).values_list('round', flat=True).first()
 
-        questions = Questions.objects.order_by('?')[:10]
+        questions = Questions.objects.order_by('?')[:6]
         for question in questions:
             Exam.objects.create(
                 candidate_id=candidate_id,
@@ -134,8 +141,11 @@ def get_questions_ids(request):
 
 
 @require_GET
+@jwt_auth_required
 def get_questions(request): 
     try:
+        if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
         exam_id = request.GET.get('exam_id')
 
         examData=Exam.objects.get(id=exam_id)
@@ -152,16 +162,19 @@ def get_questions(request):
             "stream_id": question_data.stream_id
         }
         
-        return JsonResponse({"question": response_data})
+        return JsonResponse({"question": response_data},status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)})
 
 
 @require_POST
 @csrf_exempt
+@jwt_auth_required
 def save_answer(request):
     if request.method == 'POST':
         try:
+            if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
             data = json.loads(request.body)
             candidate_id = data.get('candidate_id')
             exam_id = data.get('exam_id')
@@ -192,21 +205,24 @@ def save_answer(request):
                     exists.round = 1
                     exists.scheduler_id = scheduler_id
                     exists.save()
-                return JsonResponse({'message': 'answer submitted successfully'})
+                return JsonResponse({'message': 'answer submitted successfully'},status=200)
             else:
-                return JsonResponse({'message': 'question not found'})
+                return JsonResponse({'message': 'question not found'},status=404)
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed for answering the question'})
+        return JsonResponse({'error': 'Only POST requests are allowed for answering the question'},status=400)
 
 
 
 @require_http_methods(['PUT'])
 @csrf_exempt
+@jwt_auth_required
 def clear_answer(request):
     if request.method == 'PUT':
         try:
+            if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
             candidate_id = request.GET.get('candidate_id')
             exam_id = request.GET.get('exam_id')
             exam = Exam.objects.filter(id=exam_id, candidate_id=candidate_id)
@@ -216,21 +232,24 @@ def clear_answer(request):
                 #exam.correctResponse = 'null'
                 exam.status = 'null'
                 exam.save()
-                return JsonResponse({'success': 'candidate response cleared successfully'})
+                return JsonResponse({'success': 'candidate response cleared successfully'},status=200)
             else:
                 return JsonResponse({'error': 'Candidate response could not be cleared'}, status=400)
        
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only PUT requests are allowed for answering the question'})
+        return JsonResponse({'error': 'Only PUT requests are allowed for answering the question'},status=400)
    
 
 @csrf_exempt
 @require_POST
+@jwt_auth_required
 def submit_exam(request):
     if request.method == 'POST':
         try:
+            if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
             data = json.loads(request.body)
             candidate_id = data.get('candidate_id')
             date = data.get('date')
@@ -276,20 +295,22 @@ def submit_exam(request):
             updated_scheduled_exam.status = 'attempted'
             updated_scheduled_exam.save()
 
-            return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam' if status == 'pass' else 'Candidate failed the exam'})
+            return JsonResponse({'total_marks': total_marks, 'message': 'Candidate cleared the exam' if status == 'pass' else 'Candidate failed the exam'},status=200)
 
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'})
+        return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'},status=400)
 
 
 
 @csrf_exempt
 @require_GET
+@jwt_auth_required
 def fetch_result(request):
     if request.method == 'GET':
         try:
+            
             candidate_id = request.GET.get('candidate_id')
             
             results = Result.objects.filter(candidate_id=candidate_id)    
@@ -302,7 +323,6 @@ def fetch_result(request):
                     round_dict[round_key] = []
 
                 exam_details_list = []
-
                 exam_details = Exam.objects.filter(round=result_item.round,candidate_id=candidate_id)
                 for exam_detail in exam_details:
                     try:
@@ -333,6 +353,7 @@ def fetch_result(request):
                     'exam_id': result_item.id,
                     'total_question': result_item.question,
                     'total_marks': result_item.maximum,
+                    'obtained_marks' : result_item.obtained,
                     'result': result_item.status,
                     'exam_details': exam_details_list 
                 })
@@ -348,14 +369,20 @@ def fetch_result(request):
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only GET requests are allowed for fetching the results'})
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching the results'},status=400)
  
  
 @require_POST 
 @csrf_exempt
-def candidate_scheduler(request):          #need to updte this for the authorization that only hr can do this
+@jwt_auth_required
+def candidate_scheduler(request):    
     if request.method=='POST':
         try:
+            user=User.objects.get(id=request.user_id)
+            if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+
+          
             data = json.loads(request.body)
             scheduledDate= data.get('scheduledDate')
             round=data.get('round')
@@ -368,22 +395,27 @@ def candidate_scheduler(request):          #need to updte this for the authoriza
                 status='pending'
              )
             scheduler.save()
-            return JsonResponse({'message':'exam scheduled successfully'})
+            return JsonResponse({'message':'exam scheduled successfully'},status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'message':'only post method'})
+        return JsonResponse({'message':'only post method'},status=400)
 
 
 
 @require_http_methods(['PUT'])             
 @csrf_exempt
+@jwt_auth_required
 def update_candidate_scheduler(request):     
     if request.method == 'PUT':
         try:
+            user=User.objects.get(id=request.user_id)
+            if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+            
             candidate_id=request.GET.get('id')
             if not candidate_id:
-                return JsonResponse({'message':'sscheduler not found for the candidate'})
+                return JsonResponse({'message':'Scheduler not found for the candidate'},status=404)
             data = json.loads(request.body)
             scheduledDate=data.get('scheduledDate')
             status=data.get('status')
@@ -394,22 +426,22 @@ def update_candidate_scheduler(request):
             scheduler.round=round
             scheduler.status=status
             scheduler.save()
-            return JsonResponse({'message':'exam schedule updated successfully'})
+            return JsonResponse({'message':'exam schedule updated successfully'},status=200)
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'message':'only put method allows'})
+        return JsonResponse({'message':'only put method allows'},status=404)
  
+
 @require_GET
 @csrf_exempt
-#@jwt_auth_required
+@jwt_auth_required
 def fetch_my_scheduler(request):  # This can be done by the candidate
     try:
-        candidate_id = request.GET.get('id')
-        if not candidate_id:
-            return JsonResponse({'message': 'Candidate ID is required'}, status=400)
-
-        schedulers = Scheduler.objects.filter(candidate_id=candidate_id)
+        if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidate can access it'}, status=404)
+ 
+        schedulers = Scheduler.objects.filter(candidate_id=request.user_id)
         if not schedulers.exists():
             return JsonResponse({'message': 'No schedules found for the candidate'}, status=404)
 
@@ -434,7 +466,7 @@ def track(request):
         try:
             candidate_id=request.GET.get('id')
             if not candidate_id:
-                return JsonResponse({'message':'track not found for the candidate'})
+                return JsonResponse({'message':'track not found for the candidate'},status=404)
             tracks = Track.objects.filter(candidate_id=candidate_id)
             track_result=[]
             for track in tracks:
@@ -446,7 +478,7 @@ def track(request):
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'message':'only get method allows'})
+        return JsonResponse({'message':'only get method allows'},status=400)
     
 
 @csrf_exempt
@@ -454,22 +486,23 @@ def track(request):
 @jwt_auth_required
 def create_job(request): 
     try:
-        user =request.user_id
-
+        user=User.objects.get(id=request.user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+        
         data = json.loads(request.body)
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
-        if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to create job'})
+
         Job.objects.create(   
                 status=data.get('status'),       
                 jobName=data.get('jobName'),
                 jobDescription=data.get('jobDescription'),
                 jobSkills=data.get('jobSkills'),
+                qualification = data.get('qualification'),
                 experience=data.get('experience'),
                 expire=data.get('expire'),
-                creater_id=user  
+                creater_id=request.user_id  
             )
-        return JsonResponse({'message': 'Job created successfully'})
+        return JsonResponse({'message': 'Job created successfully'},status=201)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -479,6 +512,10 @@ def create_job(request):
 @jwt_auth_required
 def fetch_job(request):
     userId = request.user_id
+    user=User.objects.get(id=userId)
+    if user.role != 'employee' or user.emp.designation != 'hr':
+        return JsonResponse({'error': 'Only HR can access it'}, status=400)
+    
     query = request.GET.get('job') 
 
     is_emp_exists = User.objects.filter(id=userId, role='employee').exists()
@@ -493,7 +530,7 @@ def fetch_job(request):
         return JsonResponse({'error': 'Invalid query parameter'}, status=400)
 
     data = [{'id': job.id, 'status': job.status, 'jobName': job.jobName, 'jobDescription': job.jobDescription,
-             'jobSkills': job.jobSkills, 'experience': job.experience, 'expire': job.expire,
+             'jobSkills': job.jobSkills,'qualification': job.qualification, 'experience': job.experience, 'expire': job.expire,
              'createdDate': job.createdDate, 'creater': job.creater_id} for job in jobs]
 
     return JsonResponse(data, safe=False)
@@ -504,10 +541,11 @@ def fetch_job(request):
 @jwt_auth_required
 def edit_job(request):
     try:
-        user= request.user_id
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
-        if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to filter the profile'})
+        user_id= request.user_id
+        user=User.objects.get(id=user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+            return JsonResponse({'error': 'Only HR can access it'}, status=400)
+        
         data = json.loads(request.body)
         jobId = request.GET.get('jobId')
         if not jobId:
@@ -519,8 +557,9 @@ def edit_job(request):
         job.jobSkills = data.get('jobSkills')
         job.experience = data.get('experience')
         job.expire = data.get('expire')
+        job.qualification = data.get('qualification')
         job.save()
-        return JsonResponse({'message': 'Job updated successfully'})
+        return JsonResponse({'message': 'Job updated successfully'},status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -530,16 +569,17 @@ def edit_job(request):
 @require_http_methods(["DELETE"])
 def delete_job(request):
     try:
-        user= request.user_id
+        user_id= request.user_id
+        user=User.objects.get(id=user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+        
         jobId = request.GET.get('jobId') 
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
-        if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to filter the profile'}) 
 
         job = Job.objects.get(id=jobId)
         job.delete()
         
-        return JsonResponse({'message': 'Job deleted successfully'})
+        return JsonResponse({'message': 'Job deleted successfully'},status=200)
     except Job.DoesNotExist:
         return JsonResponse({'error': 'Job not found'}, status=404)
     except Exception as e:
@@ -547,49 +587,158 @@ def delete_job(request):
 
 
 @csrf_exempt
+@require_GET
+def fetch_job_list(request):
+    
+    jobs = Job.objects.filter(status='Active',expire__gte=date.today())
+
+    data = [
+        {
+            'id': job.id,
+            'status': job.status,
+            'jobName': job.jobName,
+            'jobDescription': job.jobDescription,
+            'jobSkills': job.jobSkills,
+            'qualification' : job.qualification,
+            'experience': job.experience,
+            'expire': job.expire,
+            'createdDate': job.createdDate
+        }
+        for job in jobs
+    ]
+
+    return JsonResponse(data, safe=False)
+
+
+@csrf_exempt
+@require_GET
+@jwt_auth_required
+def fetch_all_applied_jobs(request):
+    try:
+        user_id= request.user_id
+        user=User.objects.get(id=user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+        user = User.objects.get(id=user_id)
+
+        applied_jobs = ApplyJob.objects.filter(status__in=['Applied', 'In Review'])
+
+        applied_jobs_data = []
+        for job in applied_jobs:
+            try:
+                job_info = Job.objects.get(id=job.job_id)
+                candidate_info = User.objects.get(id=job.candidate_id)
+                applied_jobs_data.append({
+                    'application_id': job.id,
+                    'job_id': job_info.id,
+                    'job_jobName': job_info.jobName,
+                    'candidate_id': candidate_info.id,
+                    'candidate_name': candidate_info.fullName,
+                    'qualification': job.qualification,
+                    'applied_date': job.applied_date.strftime('%Y-%m-%d'),
+                    'skills': job.skills,
+                    'experience': job.experience,
+                    'passing_year': job.passing_year,
+                    'marks': job.marks,
+                    'status': job.status
+                })
+                
+                job.status = 'In Review'
+                job.save()
+            except Job.DoesNotExist:
+                continue 
+            except User.DoesNotExist:
+                continue  # or handle the error as appropriate
+
+        return JsonResponse({'applied_jobs': applied_jobs_data}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@csrf_exempt
 @require_POST
 @jwt_auth_required
-def accept_reject(request):
+def select_candidate_for_round1(request):
     try:
-        user= request.user_id
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
-        if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to filter the profile'})
-        applied_jobs = ApplyJob.objects.filter(status='Active')
-        for job in applied_jobs:
-            # candidate_data= User.objects.get(id=job.candidate)
-            # candidate_data.password='password'
-            # candidate_data.save()
-            find_job = Job.objects.get(id=job.jobID)
-            notification = Notification.objects.create(
-                message = "Congrats!! You're eligible for the 1st round interview for the role of " + find_job.jobName,
+        user_id = request.user_id
+        user=User.objects.get(id=user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
+        
+
+        data = json.loads(request.body)
+        candidate_id = data.get('candidate_id')
+        application_id = data.get('application_id')
+        exam_date = data.get('exam_date')
+
+        if not ApplyJob.objects.filter(id=application_id, candidate_id=candidate_id).exists():
+            return JsonResponse({'error': 'Application does not exist.'}, status=404)
+
+        applied_job = ApplyJob.objects.get(id=application_id, candidate_id=candidate_id)
+        job_details = Job.objects.get(id=applied_job.job_id)
+
+        if job_details.expire < date.today():
+            applied_job.status = 'Rejected'
+            applied_job.save()
+            return JsonResponse({'error': 'Job has expired.'}, status=404)
+
+        if applied_job.qualification not in job_details.qualification:
+            applied_job.status = 'Rejected'
+            applied_job.save()
+            return JsonResponse({'error': 'Qualification does not match.'}, status=404)
+
+        if Scheduler.objects.filter(job_id=applied_job.job_id, candidate_id=candidate_id).exists():
+            return JsonResponse({'error': 'Exam is already scheduled.'}, status=400)
+        
+        scheduled = Scheduler.objects.create(
+            scheduledDate=exam_date,
+            status='pending',
+            round=1,
+            candidate_id=candidate_id,
+            job_id=job_details.id
+        )
+
+        applied_job.status = 'Interviewed'
+        applied_job.save()
+
+        notification = Notification.objects.create(
+                message = "Congrats!! You're eligible for the 1st round interview for the role of " + job_details.jobName,
                 date = date.today(),
                 status = 'unread',
-                jobId = find_job.id,
-                jobName = find_job.jobName,
+                jobId = job_details.id,
+                jobName = job_details.jobName,
                 currentStatus = 'Round1',
-                user = job.candidate
+                user = candidate_id
             )
-            notification.save()
-            Track.objects.create(
-                candidate = job.candidate,
+        notification.save()
+        Track.objects.create(
+                candidate = candidate_id,
                 currentStatus = 'Eligible for round1',
                 round1 = 'Pending'
             )
 
-        return JsonResponse({'message': 'Applications are accepted & sent notification to them'})
+        return JsonResponse({'success': 'Exam is scheduled.', 'scheduled': {
+            'scheduledDate': scheduled.scheduledDate,
+            'status': scheduled.status,
+            'round': scheduled.round,
+            'candidate_id': scheduled.candidate_id,
+            'job_id' : scheduled.job_id
+        }}, status=200)
+
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
+
 
 
 @jwt_auth_required
 @require_GET
 def filter_profile(request):
     try:
-        user= request.user_id
-        authorizeToModule=AuthorizeToModule.objects.filter(employee_id=user).exists() and User.objects.filter(emp_id=3).exists()
-        if not authorizeToModule:
-            return JsonResponse({'error': 'you are not authorized to filter the profile'})
+        user=User.objects.get(id=request.user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+              return JsonResponse({'error': 'Only HR can access it'}, status=400)
 
         applied_jobs = ApplyJob.objects.filter(status='Active').values()  
         
@@ -608,7 +757,7 @@ def fetch_stream_with_questions(request):
                 
             stream_id = request.GET.get('id') 
             if not stream_id:
-                return JsonResponse({'message': 'stream not found'})
+                return JsonResponse({'message': 'stream not found'},status=404)
 
             # Fetching the stream
             stream = Stream.objects.get(id=stream_id)
@@ -632,14 +781,15 @@ def fetch_stream_with_questions(request):
                 all_questions.append(all_question)
                 
             if not all_questions:
-                return JsonResponse({'message': 'No questions found for this stream ID'})
+                return JsonResponse({'message': 'No questions found for this stream ID'},status=404)
                 
             return JsonResponse({'streamName': stream_name, 'all_questions': all_questions})
             
         except Exception as e:
             return JsonResponse({'error': str(e)})
     else:
-        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'})
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching questions'},status=400)
+
 
 
 
@@ -649,25 +799,82 @@ def fetch_stream_with_questions(request):
 def apply_for_job(request):
     try:
         user_id = request.user_id
-        job_id = request.GET.get('jobId')
 
         if not User.objects.filter(id=user_id, role='candidate').exists():
-            return JsonResponse({'error': 'User is not authorized or does not exist'}, status=403)
+            return JsonResponse({'error': 'Only candidates can apply for jobs.'}, status=403)
+
+        data = json.loads(request.body)
+        job_id = data.get('job_id')
+        qualification = data.get('qualification')
+        skills = data.get('skills')
+        experience = data.get('experience')
+        passing_year = data.get('passingYear')
+        marks = data.get('marks')
+
+        if not job_id:
+            return JsonResponse({'error': 'Job ID is required.'}, status=400)
 
         try:
             Job.objects.get(id=job_id)
         except Job.DoesNotExist:
-            return JsonResponse({'error': 'Job does not exist'}, status=404)
+            return JsonResponse({'error': 'Job does not exist.'}, status=404)
 
-        if ApplyJob.objects.filter(jobID=job_id, candidate=user_id).exists():
-            return JsonResponse({'error': 'You have already applied for this job'}, status=403)
+        if ApplyJob.objects.filter(job_id=job_id, candidate_id=user_id).exists():
+            return JsonResponse({'error': 'You have already applied for this job.'}, status=403)
 
-        ApplyJob.objects.create(candidate_id=user_id, jobID=job_id, status='Active')
+        ApplyJob.objects.create(
+            candidate_id=user_id,
+            job_id=job_id,
+            qualification=qualification,
+            applied_date=date.today(),
+            skills=skills,
+            experience=experience,
+            passing_year=passing_year,
+            marks=marks,
+            status='Applied'
+        )
 
-        return JsonResponse({'message': 'Job applied successfully'})
+        return JsonResponse({'message': 'Job applied successfully.'}, status=200)
 
     except Exception as e:
-        return JsonResponse({'error': str(e)})
+        return JsonResponse({'error': str(e)}, status=500)
+
+
+
+@csrf_exempt
+@require_GET
+@jwt_auth_required
+def fetch_applied_job_by_candidate(request):
+    try:
+        user_id = request.user_id
+
+        if not User.objects.filter(id=user_id, role='candidate').exists():
+            return JsonResponse({'error': 'Only candidates can fetch their applied jobs.'}, status=403)
+
+        applied_jobs = ApplyJob.objects.filter(candidate_id=user_id)
+
+        applied_jobs_data = []
+        for job in applied_jobs:
+            try:
+                job_info = Job.objects.get(id=job.job_id)
+                applied_jobs_data.append({
+                    'job_id': job_info.id,
+                    'job_jobName': job_info.jobName,
+                    'qualification': job.qualification,
+                    'applied_date': job.applied_date.strftime('%Y-%m-%d'),
+                    'skills': job.skills,
+                    'experience': job.experience,
+                    'passing_year': job.passing_year,
+                    'marks': job.marks,
+                    'status': job.status
+                })
+            except Job.DoesNotExist:
+                continue 
+
+        return JsonResponse({'applied_job': applied_jobs_data}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @csrf_exempt
