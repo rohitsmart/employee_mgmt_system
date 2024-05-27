@@ -19,7 +19,7 @@ from recruit.views import (clear_answer, create_stream, update_stream, delete_jo
                            update_candidate_scheduler, fetch_my_scheduler, track,
                            fetch_stream_with_questions, fetch_stream,get_questions,create_question,delete_question,fetch_job_list,
                            candidate_scheduler,fetch_applied_job_by_candidate,fetch_all_applied_jobs,
-                           select_candidate_for_round1)
+                           select_candidate_for_round1,schedule_next_round)
 
 from adminauth.views import create_user_credential,change_role,update_user,deactivate_employee,delete_employee,fetch_user,reset_user_passwrod
 
@@ -85,6 +85,7 @@ urlpatterns = [
     path('api/recruit/delete_question', delete_question, name='delete_question'),
     path('api/recruit/fetch_all_applied_jobs', fetch_all_applied_jobs, name='fetch_all_applied_jobs'),
     path('api/recruit/select_candidate_for_round1', select_candidate_for_round1, name='select_candidate_for_round1'),
+    path('api/recruit/schedule_next_round', schedule_next_round, name='schedule_next_round'),
     path('api/candidate/fetch_job_list', fetch_job_list, name='fetch_job_list'),
     path('api/candidate/register-candidate',register_candidate,name='register_candidate'),
     path('api/candidate/apply_for_job', apply_for_job, name='apply_for_job'),

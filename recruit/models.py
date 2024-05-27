@@ -20,8 +20,6 @@ class ApplyJob(models.Model):
     ], null=True)
 
 
-
-    
 class Role(models.Model):
     id=models.AutoField(primary_key=True)
     roleName=models.CharField(max_length=100, unique=True)
@@ -49,7 +47,7 @@ class Scheduler(models.Model):
         (2, 'Round 2'),
     )
     round = models.IntegerField(choices=ROUNDS)
-    job_id=models.IntegerField(null=True)
+    application_id=models.IntegerField(null=True)
     
     
 class Questions(models.Model):

@@ -697,7 +697,7 @@ def select_candidate_for_round1(request):
             status='pending',
             round=1,
             candidate_id=candidate_id,
-            job_id=job_details.id
+            application_id=applied_job.id
         )
 
         applied_job.status = 'Interviewed'
@@ -710,11 +710,11 @@ def select_candidate_for_round1(request):
                 jobId = job_details.id,
                 jobName = job_details.jobName,
                 currentStatus = 'Round1',
-                user = candidate_id
+                user = User.objects.get(id=candidate_id)
             )
         notification.save()
         Track.objects.create(
-                candidate = candidate_id,
+                candidate = User.objects.get(id=candidate_id),
                 currentStatus = 'Eligible for round1',
                 round1 = 'Pending'
             )
@@ -730,6 +730,52 @@ def select_candidate_for_round1(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+
+@csrf_exempt
+@require_POST
+@jwt_auth_required
+def schedule_next_round(request):
+    try:
+        user = User.objects.get(id=request.user_id)
+        if user.role != 'employee' or user.emp.designation != 'hr':
+            return JsonResponse({'error': 'Only HR can access it'}, status=400)
+
+        data = json.loads(request.body)
+        candidate_id = data.get('candidate_id')
+        application_id = data.get('application_id')
+        scheduled_date = data.get('scheduled_date')
+        round = data.get('round')
+
+        if not Scheduler.objects.filter(application_id=application_id, candidate_id=candidate_id).exists():
+            return JsonResponse({'error': 'Application does not exist.'}, status=404)
+
+        previousScheduled = Scheduler.objects.filter(application_id=application_id, candidate_id=candidate_id, round=round-1).first()
+        if not previousScheduled:
+            return JsonResponse({'error': 'Previous round not found.'}, status=400)
+
+        previousResult = Result.objects.filter(candidate_id=candidate_id, scheduler_id=previousScheduled.id, round=round-1).first()
+        if not previousResult or previousResult.status != 'pass':
+            return JsonResponse({'error': 'Candidate not eligible for next round.'}, status=400)
+
+        scheduled = Scheduler.objects.create(
+            scheduledDate=scheduled_date,
+            status='pending',
+            round=round,
+            candidate_id=candidate_id,
+            application_id=application_id
+        )
+
+        return JsonResponse({'success': 'Exam is scheduled.', 'scheduled': {
+            'scheduledDate': scheduled.scheduledDate,
+            'status': scheduled.status,
+            'round': scheduled.round,
+            'candidate_id': scheduled.candidate_id,
+            'application_id': scheduled.application_id
+        }}, status=200)
+
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @jwt_auth_required

@@ -202,7 +202,7 @@ def login(request):
                 if (password, user.password):
                     token = jwt.encode({
                         'user_id': user.id,
-                        'exp': datetime.utcnow() + timedelta(hours=1)
+                        'exp': datetime.utcnow() + timedelta(hours=6)
                     }, 'kkfwnfnfnjfknerkbeg', algorithm='HS256')
                     Token.objects.filter(user_id=user.id).delete()
                     Token.objects.create(
