@@ -78,7 +78,6 @@ def generate_password():
 
 @require_POST
 @csrf_exempt
-# @role_required('admin')
 @jwt_auth_required
 def change_role(request):
     try:

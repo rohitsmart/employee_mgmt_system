@@ -202,7 +202,7 @@ def save_answer(request):
                     exists.correctResponse = correctAnswer
                     exists.Date = date.today()
                     exists.status = status
-                    exists.round = 1
+                    exists.round = exists.round
                     exists.scheduler_id = scheduler_id
                     exists.save()
                 return JsonResponse({'message': 'answer submitted successfully'},status=200)
@@ -257,6 +257,7 @@ def submit_exam(request):
             needed = data.get('needed')
             scheduler_id = data.get('scheduler_id')
             
+            scheduler_data = Scheduler.objects.get(id=scheduler_id)
             calculate_marks = Exam.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id, status='correct')
             total_questions = Exam.objects.filter(candidate_id=candidate_id, scheduler_id=scheduler_id)
             total_marks = len(calculate_marks) * 2
@@ -271,7 +272,7 @@ def submit_exam(request):
                     'maximum': maximum,
                     'needed': needed,
                     'obtained': total_marks,
-                    'round': 1,
+                    'round': scheduler_data.round,
                     'question': len(total_questions),
                     'status': status
                 }
@@ -303,74 +304,71 @@ def submit_exam(request):
         return JsonResponse({'error': 'Only POST requests are allowed for calculating the results'},status=400)
 
 
-
 @csrf_exempt
 @require_GET
 @jwt_auth_required
 def fetch_result(request):
     if request.method == 'GET':
         try:
-            
-            candidate_id = request.GET.get('candidate_id')
-            
-            results = Result.objects.filter(candidate_id=candidate_id)    
+            if not User.objects.filter(id=request.user_id, role='candidate').exists():
+                return JsonResponse({'error': 'Only candidates can access it'}, status=404)
+
+            candidate_id = request.user_id
+
+            results = Result.objects.filter(candidate_id=candidate_id)
             result_final = []
-            round_dict = {}
 
             for result_item in results:
+                round_dict = {}
+
                 round_key = result_item.round
                 if round_key not in round_dict:
                     round_dict[round_key] = []
 
                 exam_details_list = []
-                exam_details = Exam.objects.filter(round=result_item.round,candidate_id=candidate_id)
+                exam_details = Exam.objects.filter(round=result_item.round, candidate_id=candidate_id)
+
                 for exam_detail in exam_details:
                     try:
                         questions_details = Questions.objects.get(id=exam_detail.question_id)
-                        # Append the exam detail to the exam_details_list
-                        if exam_detail.correctResponse == exam_detail.candidateResponse :
-                         exam_details_list.append({
-                            "question_id": exam_detail.question_id,
-                            "question": questions_details.question,  
-                            "correctResponse": exam_detail.correctResponse,
-                            "yourResponse": exam_detail.candidateResponse,
-                            "point": 2  
-                         })
+                        if exam_detail.correctResponse == exam_detail.candidateResponse:
+                            exam_details_list.append({
+                                "question_id": exam_detail.question_id,
+                                "question": questions_details.question,
+                                "correctResponse": exam_detail.correctResponse,
+                                "yourResponse": exam_detail.candidateResponse,
+                                "point": 2
+                            })
                         else:
                             exam_details_list.append({
-                            "question_id": exam_detail.question_id,
-                            "question": questions_details.question, 
-                            "correctResponse": exam_detail.correctResponse,
-                            "yourResponse": exam_detail.candidateResponse,
-                            "point": 0  
-                         })
-
+                                "question_id": exam_detail.question_id,
+                                "question": questions_details.question,
+                                "correctResponse": exam_detail.correctResponse,
+                                "yourResponse": exam_detail.candidateResponse,
+                                "point": 0
+                            })
                     except Questions.DoesNotExist:
-                        # Handle the case where the question does not exist
                         continue
 
                 round_dict[round_key].append({
                     'exam_id': result_item.id,
                     'total_question': result_item.question,
                     'total_marks': result_item.maximum,
-                    'obtained_marks' : result_item.obtained,
+                    'obtained_marks': result_item.obtained,
                     'result': result_item.status,
-                    'exam_details': exam_details_list 
+                    'exam_details': exam_details_list
                 })
-
-            # Prepare final result list
-            for round_key, result_list in round_dict.items():
                 result_final.append({
                     'round': round_key,
-                    'result': result_list
+                    'result': round_dict[round_key]  # Using round_key directly as the key
                 })
 
             return JsonResponse({'results': result_final})
         except Exception as e:
-            return JsonResponse({'error': str(e)})
+            return JsonResponse({'error': str(e)}, status=500)
     else:
-        return JsonResponse({'error': 'Only GET requests are allowed for fetching the results'},status=400)
- 
+        return JsonResponse({'error': 'Only GET requests are allowed for fetching the results'}, status=400)
+
  
 @require_POST 
 @csrf_exempt
@@ -778,6 +776,7 @@ def schedule_next_round(request):
         return JsonResponse({'error': str(e)}, status=500)
 
 
+
 @jwt_auth_required
 @require_GET
 def filter_profile(request):
@@ -792,6 +791,8 @@ def filter_profile(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
     
+
+
 
 @require_GET
 def fetch_stream_with_questions(request):
