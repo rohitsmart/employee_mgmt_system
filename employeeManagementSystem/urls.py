@@ -21,11 +21,10 @@ from recruit.views import (clear_answer, create_stream, update_stream, delete_jo
                            candidate_scheduler,fetch_applied_job_by_candidate,fetch_all_applied_jobs,
                            select_candidate_for_round1,schedule_next_round)
 
-from adminauth.views import create_user_credential,change_role,update_user,deactivate_employee,delete_employee,fetch_user,reset_user_passwrod
+from adminauth.views import change_role,update_user,deactivate_employee,delete_employee,fetch_user,reset_user_passwrod
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/admin/user/generate-credentials', create_user_credential, name='create_user'),
     path('api/admin/user/change_role', change_role, name='change_role'),
     path('api/admin/user/update_user', update_user, name='update_user'),
     path('api/admin/user/deactivate_employee', deactivate_employee, name='deactivate_employee'),

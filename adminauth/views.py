@@ -60,6 +60,7 @@ def create_user_credential(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
 def generate_username(first_name, last_name):
     first_chars = first_name[:1].upper() + first_name[1:2].lower()
     random_chars = ''.join(random.choices(string.ascii_letters + string.digits, k=5))
@@ -72,8 +73,10 @@ def generate_employee_username(full_name, emp_id):
     last_chars = str(emp_id)
     return first_chars + random_chars + last_chars
 
-def generate_password():
-    return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+# def generate_password():
+#     return ''.join(random.choices(string.ascii_letters + string.digits, k=8))
+
+
 
 
 @require_POST
@@ -88,7 +91,7 @@ def change_role(request):
         user_id = data.get('user_id')
         designation = data.get('designation')
 
-        user = User.objects.get(id=user_id)
+        user = User.objects.filter(id=user_id).first()
         
         if not user:
             return JsonResponse({'error': 'User not found'}, status=404)
@@ -99,13 +102,18 @@ def change_role(request):
         last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
         last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
         emp_id = last_emp_id + 1
-        emp_id_record = EmpID.objects.create(emp_id=emp_id,designation=designation)
+        
+        emp_id_record = EmpID.objects.create(emp_id=emp_id, designation=designation)
 
+        email = generate_email(user.fullName)
+        password = generate_password(user.fullName)
         user.role = 'employee'
+        user.email = email
+        user.password=password
         user.emp = emp_id_record
         user.save()
 
-        return JsonResponse({'message': 'User role changed to employee'}, status=200)
+        return JsonResponse({'message': 'User role changed to employee', 'email': email, 'password': password}, status=200)
     
     except User.DoesNotExist:
         return JsonResponse({'error': 'User not found'}, status=404)
@@ -113,6 +121,19 @@ def change_role(request):
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+def generate_email(fullName):
+    first_part = fullName[:3].lower()
+    random_chars = ''.join(random.choices(string.ascii_lowercase, k=3))
+    random_number = random.randint(100, 999)
+    email = f"{first_part}{random_chars}{random_number}@perfectkode.com"
+    return email
+
+
+def generate_password(fullName):
+    first_part = fullName[:3]
+    random_number = random.randint(10000, 99999) 
+    password = f"{first_part}@{random_number}"
+    return password
 
 @csrf_exempt
 def update_user(request):
