@@ -40,6 +40,24 @@ def create_employee(request):
         role = request.POST.get('role')
         mobileNumber = request.POST.get('mobileNumber')
         designation = request.POST.get('designation')
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        username = request.POST.get('username')
+        emp_id = request.POST.get('emp_id')
+
+        if EmpID.objects.filter(emp_id=emp_id).exists():
+            return JsonResponse({'error': "Employee id already exits"}, status=400)
+        if User.objects.filter(userName=username).exists():
+            return JsonResponse({'error': "Username already exits"}, status=400)
+        if User.objects.filter(mobileNumber=mobileNumber).exists():
+            return JsonResponse({'error': "mobileNumber already exits"}, status=400)
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'error': "Email already exits"}, status=400)
+
+        mobile_number = int(mobileNumber)
+        if mobile_number < 1000000000 or mobile_number >= 10000000000:
+                return JsonResponse({'error': "Mobile number must be a 10-digit integer"}, status=400)
+        
 
         if img and allowed_image(img.name):
             timestamp = int(datetime.now().timestamp())
@@ -47,16 +65,6 @@ def create_employee(request):
             path = default_storage.save(f'public/images/{imagename}', img)
             image_url = default_storage.url(path)
 
-            mobile_number = int(mobileNumber)
-            if mobile_number < 1000000000 or mobile_number >= 10000000000:
-                return JsonResponse({'error': "Mobile number must be a 10-digit integer"}, status=400)
-
-            email = f"{firstName.lower()}.{lastName.lower()}@perfectkode.com"
-            last_emp_id_record = EmpID.objects.aggregate(max_emp_id=Max('emp_id'))
-            last_emp_id = last_emp_id_record['max_emp_id'] if last_emp_id_record['max_emp_id'] is not None else 999  # Default value if no records found
-            emp_id = last_emp_id + 1
-
-            password = f"{firstName[0].upper()}{lastName}@{emp_id}"
 
             try:
                 emp_id_record = EmpID.objects.create(emp_id=emp_id, designation=designation)
@@ -68,6 +76,7 @@ def create_employee(request):
                     role=role,
                     mobileNumber=mobileNumber,
                     password=make_password(password),
+                    userName=username,
                     active=False,
                     img_url=imagename
                 )
@@ -194,10 +203,10 @@ def get_candidate_profile(request):
 def login(request):
     if request.method == 'POST':
         data = json.loads(request.body)
-        email = data.get('email')
+        username = data.get('username')
         password = data.get('password')
-        if email and password:
-            user = User.objects.filter(email=email).first()
+        if username and password:
+            user = User.objects.filter(userName=username).first()
             if user:
                 if (password, user.password):
                     token = jwt.encode({
@@ -219,7 +228,7 @@ def login(request):
             else:
                 return JsonResponse({'error': 'Invalid credentials'}, status=400)
         else:
-            return JsonResponse({'error': 'Email and password are required'}, status=400)
+            return JsonResponse({'error': 'Username and password are required'}, status=400)
     else:
         return JsonResponse({'error': 'Invalid request method'}, status=405)
 

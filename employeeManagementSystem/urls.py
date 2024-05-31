@@ -114,5 +114,6 @@ urlpatterns = [
     path('api/sms', sms_api, name='sms_api'),
     path('api/users/candidate/get-candidate-profile', get_candidate_profile, name='get_candidate_profile'),
     path('api/users/candidate/clear-answer', clear_answer, name='clear_answer'),
+    
 ]
 
